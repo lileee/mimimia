@@ -21,7 +21,7 @@ export class AssetLoader {
 
   constructor(manifest: readonly AssetManifestEntry[], options: AssetLoaderOptions = {}) {
     this.#manifest = manifest;
-    this.#fetcher = options.fetcher ?? fetch;
+    this.#fetcher = options.fetcher ?? ((input, init) => globalThis.fetch(input, init));
     this.#sleep = options.sleep ?? defaultSleep;
   }
 

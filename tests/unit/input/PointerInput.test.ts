@@ -28,15 +28,16 @@ function setup(initialState: ExperienceState = 'idle') {
   const documentTarget = new FakeDocument();
   let state = initialState;
   const events: ExperienceEvent[] = [];
+  const eventTimes: Array<number | undefined> = [];
   const positions: Array<{ x: number; y: number }> = [];
   const input = new PointerInput(canvas as unknown as HTMLCanvasElement, uiRoot as unknown as HTMLElement, {
     getState: () => state,
-    dispatch: (event) => events.push(event),
+    dispatch: (event, nowMs?: number) => { events.push(event); eventTimes.push(nowMs); },
     onPointerMove: (position) => positions.push(position),
     windowTarget,
     documentTarget: documentTarget as unknown as Document,
   });
-  return { canvas, uiRoot, windowTarget, documentTarget, events, positions, input, setState: (value: ExperienceState) => { state = value; } };
+  return { canvas, uiRoot, windowTarget, documentTarget, events, eventTimes, positions, input, setState: (value: ExperienceState) => { state = value; } };
 }
 
 describe('PointerInput', () => {
@@ -49,6 +50,12 @@ describe('PointerInput', () => {
 
     expect(fixture.events).toEqual([{ type: 'POINTER_DOWN' }]);
     expect(fixture.canvas.setPointerCapture).toHaveBeenCalledWith(7);
+  });
+
+  it('forwards the input timestamp so a delayed render cannot extend the hold', () => {
+    const fixture = setup();
+    fixture.canvas.dispatchEvent(pointerEvent('pointerdown', { button: 0, pointerId: 7, timeStamp: 123 }));
+    expect(fixture.eventTimes).toEqual([123]);
   });
 
   it('does not start a spell while summoning or complete', () => {

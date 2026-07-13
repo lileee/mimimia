@@ -7,7 +7,7 @@ export interface NormalizedPointerPosition {
 
 interface PointerInputOptions {
   getState: () => ExperienceState;
-  dispatch: (event: ExperienceEvent) => void;
+  dispatch: (event: ExperienceEvent, nowMs: number) => void;
   onPointerMove: (position: NormalizedPointerPosition) => void;
   windowTarget?: EventTarget;
   documentTarget?: Document;
@@ -59,18 +59,18 @@ export class PointerInput {
   readonly #onPointerDown = (event: PointerEvent): void => {
     if (event.button !== 0 || this.#options.getState() !== 'idle') return;
     this.#canvas.setPointerCapture(event.pointerId);
-    this.#options.dispatch({ type: 'POINTER_DOWN' });
+    this.#options.dispatch({ type: 'POINTER_DOWN' }, event.timeStamp);
     event.preventDefault();
   };
 
   readonly #onPointerUp = (event: PointerEvent): void => {
     if (event.button !== 0 || !isHoldingState(this.#options.getState())) return;
-    this.#options.dispatch({ type: 'POINTER_UP' });
+    this.#options.dispatch({ type: 'POINTER_UP' }, event.timeStamp);
     event.preventDefault();
   };
 
-  readonly #onPointerCancel = (): void => {
-    if (isHoldingState(this.#options.getState())) this.#options.dispatch({ type: 'POINTER_CANCEL' });
+  readonly #onPointerCancel = (event: Event): void => {
+    if (isHoldingState(this.#options.getState())) this.#options.dispatch({ type: 'POINTER_CANCEL' }, event.timeStamp);
   };
 
   readonly #onPointerMove = (event: PointerEvent): void => {
@@ -85,13 +85,13 @@ export class PointerInput {
     event.stopPropagation();
   };
 
-  readonly #onWindowBlur = (): void => {
-    if (isHoldingState(this.#options.getState())) this.#options.dispatch({ type: 'POINTER_CANCEL' });
+  readonly #onWindowBlur = (event: Event): void => {
+    if (isHoldingState(this.#options.getState())) this.#options.dispatch({ type: 'POINTER_CANCEL' }, event.timeStamp);
   };
 
-  readonly #onVisibilityChange = (): void => {
+  readonly #onVisibilityChange = (event: Event): void => {
     if (this.#documentTarget.hidden && isHoldingState(this.#options.getState())) {
-      this.#options.dispatch({ type: 'POINTER_CANCEL' });
+      this.#options.dispatch({ type: 'POINTER_CANCEL' }, event.timeStamp);
     }
   };
 }

@@ -1,10 +1,13 @@
 import './styles.css';
 
-import { isQualityTier, QUALITY_PROFILES, type QualityTier } from './quality/qualityProfiles';
-import { createRenderer } from './rendering/createRenderer';
-import { PostProcessing } from './rendering/PostProcessing';
-import { Stage } from './stage/Stage';
+import { ASSET_MANIFEST } from './assets/assetManifest';
+import { AssetLoader } from './assets/AssetLoader';
+import { createExperience, type ExperienceRuntime } from './app/createExperience';
+import { ExperienceController, type DebugFrameState } from './app/ExperienceController';
+import { ReadinessGate } from './app/readinessGate';
+import { isQualityTier, type QualityTier } from './quality/qualityProfiles';
 import type { ExperienceState } from './state/experienceTypes';
+import { AppUI } from './ui/AppUI';
 
 const app = document.createElement('main');
 app.id = 'app';
@@ -21,137 +24,164 @@ const uiRoot = document.createElement('section');
 uiRoot.id = 'ui-root';
 uiRoot.setAttribute('aria-live', 'polite');
 
-const status = document.createElement('p');
-status.className = 'preparation-status';
-status.textContent = '月光虚境正在准备';
-
-uiRoot.append(status);
 app.append(sceneHost, uiRoot);
 document.body.append(app);
 
+const ui = new AppUI(uiRoot);
 const query = __MIMIMIA_ALLOW_DEBUG_QUERY__ ? new URLSearchParams(window.location.search) : new URLSearchParams();
-const qualityValue = query.get('quality');
-const quality = isQualityTier(qualityValue) ? qualityValue : 'high';
+const debugMode = query.get('debug') === '1';
+const requestedQuality = query.get('quality');
+const quality: QualityTier = isQualityTier(requestedQuality) ? requestedQuality : 'high';
 const forceWebGL = query.get('backend') === 'webgl2';
-const characterPose = query.get('characterPose');
-const debugCharacterPose = characterPose === 'min' || characterPose === 'max' ? characterPose : 'idle';
-const experienceStateValue = query.get('experienceState');
-const debugExperienceState: ExperienceState = experienceStateValue === 'charging'
-  || experienceStateValue === 'charged'
-  || experienceStateValue === 'dissolving'
-  || experienceStateValue === 'summoning'
-  || experienceStateValue === 'complete'
-  ? experienceStateValue
-  : 'idle';
-const numberQuery = (name: string, fallback: number) => {
+const holdBenchmarkGate = !debugMode && query.get('testGate') === 'benchmark';
+const gate = new ReadinessGate();
+const loader = new AssetLoader(ASSET_MANIFEST);
+let loadProgress = 0;
+let runtime: ExperienceRuntime | null = null;
+let controller: ExperienceController | null = null;
+let benchmarkReleaseRequested = !holdBenchmarkGate;
+let disposed = false;
+
+const renderLoading = () => {
+  document.body.dataset.loadProgress = loadProgress >= 1 ? '1' : loadProgress.toFixed(4);
+  document.body.dataset.experienceState = 'loading';
+  ui.render({
+    state: 'loading',
+    progress: loadProgress,
+    muted: true,
+    quality,
+    error: null,
+    readyToEnter: false,
+    calibrating: loadProgress >= 1 && !gate.isReady(),
+  });
+};
+
+const renderError = (message: string, detail: string) => {
+  canvas.hidden = true;
+  document.body.dataset.experienceState = 'loading';
+  ui.render({
+    state: 'loading',
+    progress: loadProgress,
+    muted: true,
+    quality,
+    error: { message, detail, action: 'reload' },
+  });
+};
+
+ui.setActionHandler((action) => {
+  if (action === 'reload' || action === 'reenter') window.location.reload();
+});
+renderLoading();
+
+function numberQuery(name: string, fallback: number): number {
   const value = Number(query.get(name));
   return Number.isFinite(value) ? Math.min(1, Math.max(0, value)) : fallback;
-};
-const debugCharge = numberQuery('charge', debugExperienceState === 'charged' ? 1 : 0);
-const debugDissolve = numberQuery('dissolve', 0);
-const debugSummon = numberQuery('summon', 0);
-const debugPointerX = Math.min(1, Math.max(-1, Number(query.get('pointerX')) || 0));
-const debugPointerY = Math.min(1, Math.max(-1, Number(query.get('pointerY')) || 0));
-let disposeRenderer: (() => void) | undefined;
+}
 
-async function initializeRenderer() {
+function debugFrame(): DebugFrameState {
+  const value = query.get('experienceState');
+  const state: ExperienceState = value === 'charging'
+    || value === 'charged'
+    || value === 'dissolving'
+    || value === 'summoning'
+    || value === 'complete'
+    ? value
+    : 'idle';
+  return {
+    state,
+    charge: numberQuery('charge', state === 'charged' ? 1 : 0),
+    dissolve: numberQuery('dissolve', 0),
+    summon: numberQuery('summon', 0),
+    pointerNdc: {
+      x: Math.min(1, Math.max(-1, Number(query.get('pointerX')) || 0)),
+      y: Math.min(1, Math.max(-1, Number(query.get('pointerY')) || 0)),
+    },
+  };
+}
+
+function startController(debug?: DebugFrameState): void {
+  if (!runtime || controller || disposed) return;
+  controller = new ExperienceController({ canvas, uiRoot, ui, runtime, quality, debugFrame: debug });
+  document.body.dataset.renderBackend = runtime.renderer.backend;
+  document.body.dataset.characterPose = query.get('characterPose') ?? 'idle';
+  canvas.hidden = false;
+  controller.start();
+}
+
+function releaseBenchmarkGate(): void {
+  benchmarkReleaseRequested = true;
+  gate.mark('benchmarkReady');
+  if (runtime && gate.isReady()) startController();
+  else renderLoading();
+}
+
+if (holdBenchmarkGate) {
+  (window as typeof window & { __mimimiaReleaseGate?: () => void }).__mimimiaReleaseGate = releaseBenchmarkGate;
+}
+
+async function initialize(): Promise<void> {
   try {
     if (query.get('fault') === 'renderer-init') throw new Error('Injected renderer initialization failure');
-    const handle = await createRenderer(canvas, { forceWebGL, quality });
-    const stage = new Stage({
-      characterPose: debugCharacterPose,
-      showCat: query.get('showCat') === '1',
-    });
-    await stage.loadCharacters();
-    const postProcessing = new PostProcessing(handle.renderer, stage.scene, stage.cameraRig.camera, QUALITY_PROFILES[quality]);
-    const resize = () => {
-      handle.resize(window.innerWidth, window.innerHeight);
-      stage.resize(window.innerWidth, window.innerHeight);
-      postProcessing.resize(window.innerWidth, window.innerHeight);
-      canvas.dataset.safeFrame = JSON.stringify(stage.cameraRig.getSafeFrame(window.innerWidth, window.innerHeight));
-    };
-    resize();
-    let previousTime = performance.now();
-    let animationFrame = 0;
-    let active = true;
-    const makeSignals = (nowMs: number, deltaSeconds: number) => ({
-      nowMs,
-      deltaSeconds,
-      state: debugExperienceState,
-      charge: debugCharge,
-      dissolve: debugDissolve,
-      summon: debugSummon,
-      pointerNdc: { x: debugPointerX, y: debugPointerY },
-    });
-    const updateDiagnostics = () => {
-      canvas.dataset.magicCircle = JSON.stringify(stage.magicCircle.getSnapshot());
-      canvas.dataset.particleStats = JSON.stringify(stage.particleSystem.getStats());
-      canvas.dataset.summon = JSON.stringify(stage.summonDirector?.getSnapshot() ?? {});
-      canvas.dataset.cat = JSON.stringify(stage.moonCat?.getDiagnostics() ?? {});
-      canvas.dataset.postprocessing = JSON.stringify(postProcessing.getSnapshot());
-      document.body.dataset.catVisible = String(stage.moonCat?.root.visible ?? false);
-    };
-    const renderFrame = (nowMs: number) => {
-      const deltaSeconds = Math.min(0.1, Math.max(0, (nowMs - previousTime) / 1000));
-      previousTime = nowMs;
-      const signals = makeSignals(nowMs, deltaSeconds);
-      stage.update(signals, quality);
-      postProcessing.update(signals);
-      updateDiagnostics();
-      postProcessing.render();
-      if (active) animationFrame = requestAnimationFrame(renderFrame);
-    };
-    await postProcessing.precompile();
-    const warmupFrames: Array<[QualityTier, ReturnType<typeof makeSignals>]> = [
-      ['compatibility', { ...makeSignals(previousTime, 0), state: 'idle', charge: 0 }],
-      ['balanced', { ...makeSignals(previousTime + 16, 0.016), state: 'charged', charge: 1 }],
-      ['high', { ...makeSignals(previousTime + 32, 0.016), state: 'summoning', charge: 1, summon: 0.43 }],
-    ];
-    for (const [warmupQuality, signals] of warmupFrames) {
-      postProcessing.setQuality(QUALITY_PROFILES[warmupQuality]);
-      stage.update(signals, warmupQuality);
-      postProcessing.update(signals);
-      postProcessing.render();
+
+    if (debugMode) {
+      loadProgress = 1;
+      document.body.dataset.loadProgress = '1';
+      const characterPose = query.get('characterPose');
+      runtime = await createExperience({
+        canvas,
+        assets: new Map(),
+        quality,
+        forceWebGL,
+        characterPose: characterPose === 'min' || characterPose === 'max' ? characterPose : 'idle',
+        showCat: query.get('showCat') === '1',
+      });
+      startController(debugFrame());
+      return;
     }
-    postProcessing.setQuality(QUALITY_PROFILES[quality]);
-    const initialSignals = makeSignals(previousTime, 0);
-    stage.update(initialSignals, quality);
-    postProcessing.update(initialSignals);
-    postProcessing.clearHistory();
-    updateDiagnostics();
-    postProcessing.render();
-    postProcessing.render();
-    canvas.dataset.renderReady = 'true';
-    document.body.dataset.renderBackend = handle.backend;
-    document.body.dataset.stageReady = 'true';
-    document.body.dataset.characterReady = 'true';
-    document.body.dataset.girlLayerCount = String(stage.magicalGirl?.layered.layerNames.length ?? 0);
-    document.body.dataset.catLayerCount = String(stage.moonCat?.layered.layerNames.length ?? 0);
-    document.body.dataset.catVisible = String(stage.moonCat?.root.visible ?? false);
-    document.body.dataset.characterPose = debugCharacterPose;
-    document.body.dataset.magicCircleReady = 'true';
-    document.body.dataset.particlesReady = 'true';
-    document.body.dataset.summonReady = 'true';
-    document.body.dataset.postprocessingReady = 'true';
-    document.body.dataset.experienceState = debugExperienceState;
-    status.textContent = '月光虚境已就绪';
-    animationFrame = requestAnimationFrame(renderFrame);
-    window.addEventListener('resize', resize);
-    disposeRenderer = () => {
-      active = false;
-      cancelAnimationFrame(animationFrame);
-      window.removeEventListener('resize', resize);
-      postProcessing.dispose();
-      stage.dispose();
-      handle.dispose();
-    };
+
+    const loaded = await loader.load((progress) => {
+      loadProgress = progress;
+      renderLoading();
+    });
+    if (loaded.status === 'aborted') return;
+    if (loaded.status === 'critical-failure') {
+      throw new Error(`Critical assets failed: ${loaded.failed.join(', ')}`);
+    }
+    gate.mark('assetsReady');
+    renderLoading();
+
+    runtime = await createExperience({
+      canvas,
+      assets: loaded.assets,
+      quality,
+      forceWebGL,
+      onRendererReady: (handle) => {
+        gate.mark('rendererReady');
+        document.body.dataset.renderBackend = handle.backend;
+        renderLoading();
+      },
+      onWarmupReady: () => {
+        gate.mark('warmupReady');
+        renderLoading();
+      },
+    });
+
+    if (benchmarkReleaseRequested) gate.mark('benchmarkReady');
+    if (gate.isReady()) startController();
+    else renderLoading();
   } catch (error) {
     console.error('Moonlight scene initialization failed', error);
-    canvas.hidden = true;
-    status.dataset.renderError = '';
-    status.textContent = '图形环境暂时不可用，请稍后重试';
+    runtime?.dispose();
+    runtime = null;
+    renderError('图形环境暂时不可用', '月光通路没有建立，请稍后重试。');
   }
 }
 
-window.addEventListener('pagehide', () => disposeRenderer?.(), { once: true });
-void initializeRenderer();
+window.addEventListener('pagehide', () => {
+  disposed = true;
+  loader.cancel();
+  if (controller) controller.dispose();
+  else runtime?.dispose();
+}, { once: true });
+
+void initialize();

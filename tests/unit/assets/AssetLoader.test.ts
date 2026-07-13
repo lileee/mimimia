@@ -26,6 +26,22 @@ function chunkedResponse(chunks: number[][], contentLength?: number): Response {
 }
 
 describe('AssetLoader', () => {
+  it('calls the browser fetch function with the global receiver', async () => {
+    let receiver: unknown;
+    const browserFetch = vi.fn(function (this: unknown) {
+      receiver = this;
+      return Promise.resolve(chunkedResponse([[1, 2, 3, 4]], 4));
+    });
+    vi.stubGlobal('fetch', browserFetch);
+    try {
+      const loader = new AssetLoader([entry({ kind: 'sound', retryCount: 0 })]);
+      await expect(loader.load(() => undefined)).resolves.toMatchObject({ status: 'success' });
+      expect(receiver).toBe(globalThis);
+    } finally {
+      vi.unstubAllGlobals();
+    }
+  });
+
   it('reports monotonic real-byte progress and finishes at one', async () => {
     const manifest = [entry(), entry({ id: 'cat-body', url: '/cat.webp', bytes: 3 })];
     const responses = [chunkedResponse([[1, 2], [3, 4]], 4), chunkedResponse([[5], [6, 7]])];

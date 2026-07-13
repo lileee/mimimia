@@ -47,6 +47,14 @@ export class Stage {
   }
 
   update(signals: FrameSignals, quality: QualityTier): void {
+    this.#backdrop.update(signals.nowMs, quality);
+    this.magicalGirl?.update(signals);
+    this.magicCircle.update(signals);
+    this.particleSystem.update(signals, quality);
+    if (!this.#options.showCat) this.summonDirector?.update(signals);
+    this.moonCat?.setPointerNdc(signals.pointerNdc.x, signals.pointerNdc.y);
+    this.moonCat?.update(signals);
+
     if (signals.state === 'charging' || signals.state === 'charged') {
       this.cameraRig.setChargeProgress(signals.charge);
     } else if (signals.state === 'dissolving') {
@@ -56,13 +64,6 @@ export class Stage {
     } else {
       this.cameraRig.reset();
     }
-    this.#backdrop.update(signals.nowMs, quality);
-    this.magicCircle.update(signals);
-    this.particleSystem.update(signals, quality);
-    this.magicalGirl?.update(signals);
-    if (!this.#options.showCat) this.summonDirector?.update(signals);
-    this.moonCat?.setPointerNdc(signals.pointerNdc.x, signals.pointerNdc.y);
-    this.moonCat?.update(signals);
   }
 
   resize(width: number, height: number): void {
