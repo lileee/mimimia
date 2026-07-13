@@ -124,6 +124,7 @@ export class ParticleSystem {
     } else {
       this.#mode = 'gather';
       this.#burstStartedAt = null;
+      this.#pendingBurst = null;
     }
 
     this.#setActiveCount(activeCount);

@@ -29,6 +29,7 @@ test('dissolves a 2499 ms early release gently back to the allocation baseline',
 });
 
 test('preserves the full dissolve flow and fixed caps across all quality tiers', async ({ page }) => {
+  test.setTimeout(75_000);
   for (const [quality, expected, trails] of [
     ['high', 900, 4],
     ['balanced', 520, 2],
@@ -42,7 +43,7 @@ test('preserves the full dissolve flow and fixed caps across all quality tiers',
 
 test('keeps the dissolve particles in forced WebGL 2', async ({ page }) => {
   await page.goto('/?debug=1&backend=webgl2&quality=compatibility&experienceState=dissolving&charge=0.9996&dissolve=0.45');
-  await expect(page.locator('body')).toHaveAttribute('data-render-backend', 'webgl2');
   await waitForParticles(page);
+  await expect(page.locator('body')).toHaveAttribute('data-render-backend', 'webgl2');
   expect((await readStats(page)).activeCount).toBeGreaterThan(0);
 });

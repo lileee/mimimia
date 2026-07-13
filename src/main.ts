@@ -1,7 +1,8 @@
 import './styles.css';
 
-import { isQualityTier } from './quality/qualityProfiles';
+import { isQualityTier, QUALITY_PROFILES, type QualityTier } from './quality/qualityProfiles';
 import { createRenderer } from './rendering/createRenderer';
+import { PostProcessing } from './rendering/PostProcessing';
 import { Stage } from './stage/Stage';
 import type { ExperienceState } from './state/experienceTypes';
 
@@ -62,9 +63,11 @@ async function initializeRenderer() {
       showCat: query.get('showCat') === '1',
     });
     await stage.loadCharacters();
+    const postProcessing = new PostProcessing(handle.renderer, stage.scene, stage.cameraRig.camera, QUALITY_PROFILES[quality]);
     const resize = () => {
       handle.resize(window.innerWidth, window.innerHeight);
       stage.resize(window.innerWidth, window.innerHeight);
+      postProcessing.resize(window.innerWidth, window.innerHeight);
       canvas.dataset.safeFrame = JSON.stringify(stage.cameraRig.getSafeFrame(window.innerWidth, window.innerHeight));
     };
     resize();
@@ -80,24 +83,44 @@ async function initializeRenderer() {
       summon: debugSummon,
       pointerNdc: { x: debugPointerX, y: debugPointerY },
     });
-    const renderFrame = async (nowMs: number) => {
-      const deltaSeconds = Math.min(0.1, Math.max(0, (nowMs - previousTime) / 1000));
-      previousTime = nowMs;
-      stage.update(makeSignals(nowMs, deltaSeconds), quality);
+    const updateDiagnostics = () => {
       canvas.dataset.magicCircle = JSON.stringify(stage.magicCircle.getSnapshot());
       canvas.dataset.particleStats = JSON.stringify(stage.particleSystem.getStats());
       canvas.dataset.summon = JSON.stringify(stage.summonDirector?.getSnapshot() ?? {});
       canvas.dataset.cat = JSON.stringify(stage.moonCat?.getDiagnostics() ?? {});
+      canvas.dataset.postprocessing = JSON.stringify(postProcessing.getSnapshot());
       document.body.dataset.catVisible = String(stage.moonCat?.root.visible ?? false);
-      await handle.renderer.renderAsync(stage.scene, stage.cameraRig.camera);
+    };
+    const renderFrame = (nowMs: number) => {
+      const deltaSeconds = Math.min(0.1, Math.max(0, (nowMs - previousTime) / 1000));
+      previousTime = nowMs;
+      const signals = makeSignals(nowMs, deltaSeconds);
+      stage.update(signals, quality);
+      postProcessing.update(signals);
+      updateDiagnostics();
+      postProcessing.render();
       if (active) animationFrame = requestAnimationFrame(renderFrame);
     };
-    stage.update(makeSignals(previousTime, 0), quality);
-    canvas.dataset.magicCircle = JSON.stringify(stage.magicCircle.getSnapshot());
-    canvas.dataset.particleStats = JSON.stringify(stage.particleSystem.getStats());
-    canvas.dataset.summon = JSON.stringify(stage.summonDirector?.getSnapshot() ?? {});
-    canvas.dataset.cat = JSON.stringify(stage.moonCat?.getDiagnostics() ?? {});
-    await handle.renderer.renderAsync(stage.scene, stage.cameraRig.camera);
+    await postProcessing.precompile();
+    const warmupFrames: Array<[QualityTier, ReturnType<typeof makeSignals>]> = [
+      ['compatibility', { ...makeSignals(previousTime, 0), state: 'idle', charge: 0 }],
+      ['balanced', { ...makeSignals(previousTime + 16, 0.016), state: 'charged', charge: 1 }],
+      ['high', { ...makeSignals(previousTime + 32, 0.016), state: 'summoning', charge: 1, summon: 0.43 }],
+    ];
+    for (const [warmupQuality, signals] of warmupFrames) {
+      postProcessing.setQuality(QUALITY_PROFILES[warmupQuality]);
+      stage.update(signals, warmupQuality);
+      postProcessing.update(signals);
+      postProcessing.render();
+    }
+    postProcessing.setQuality(QUALITY_PROFILES[quality]);
+    const initialSignals = makeSignals(previousTime, 0);
+    stage.update(initialSignals, quality);
+    postProcessing.update(initialSignals);
+    postProcessing.clearHistory();
+    updateDiagnostics();
+    postProcessing.render();
+    postProcessing.render();
     canvas.dataset.renderReady = 'true';
     document.body.dataset.renderBackend = handle.backend;
     document.body.dataset.stageReady = 'true';
@@ -109,6 +132,7 @@ async function initializeRenderer() {
     document.body.dataset.magicCircleReady = 'true';
     document.body.dataset.particlesReady = 'true';
     document.body.dataset.summonReady = 'true';
+    document.body.dataset.postprocessingReady = 'true';
     document.body.dataset.experienceState = debugExperienceState;
     status.textContent = '月光虚境已就绪';
     animationFrame = requestAnimationFrame(renderFrame);
@@ -117,10 +141,12 @@ async function initializeRenderer() {
       active = false;
       cancelAnimationFrame(animationFrame);
       window.removeEventListener('resize', resize);
+      postProcessing.dispose();
       stage.dispose();
       handle.dispose();
     };
-  } catch {
+  } catch (error) {
+    console.error('Moonlight scene initialization failed', error);
     canvas.hidden = true;
     status.dataset.renderError = '';
     status.textContent = '图形环境暂时不可用，请稍后重试';
