@@ -1,6 +1,7 @@
 import { AudioController } from '../audio/AudioController';
-import type { FrameSignals } from './frameSignals';
 import type { CharacterDebugPose } from '../character/MagicalGirlRig';
+import { WarmupController } from '../performance/WarmupController';
+import type { WarmupReport } from '../performance/performanceTypes';
 import { QUALITY_PROFILES, type QualityTier } from '../quality/qualityProfiles';
 import { createRenderer } from '../rendering/createRenderer';
 import { PostProcessing } from '../rendering/PostProcessing';
@@ -15,7 +16,7 @@ export interface CreateExperienceOptions {
   characterPose?: CharacterDebugPose;
   showCat?: boolean;
   onRendererReady?: (handle: RendererHandle) => void;
-  onWarmupReady?: () => void;
+  onWarmupReady?: (report: WarmupReport) => void;
 }
 
 export interface ExperienceRuntime {
@@ -28,22 +29,6 @@ export interface ExperienceRuntime {
   resize(width: number, height: number): void;
   dispose(): void;
 }
-
-const frame = (
-  nowMs: number,
-  state: FrameSignals['state'],
-  charge = 0,
-  dissolve = 0,
-  summon = 0,
-): FrameSignals => ({
-  nowMs,
-  deltaSeconds: 1 / 60,
-  state,
-  charge,
-  dissolve,
-  summon,
-  pointerNdc: { x: 0, y: 0 },
-});
 
 export async function createExperience(options: CreateExperienceOptions): Promise<ExperienceRuntime> {
   const stage = new Stage({ characterPose: options.characterPose, showCat: options.showCat });
@@ -76,25 +61,47 @@ export async function createExperience(options: CreateExperienceOptions): Promis
     resize(window.innerWidth, window.innerHeight);
     await postProcessing.precompile();
 
-    const nowMs = performance.now();
-    const warmupFrames: Array<[QualityTier, FrameSignals]> = [
-      ['compatibility', frame(nowMs, 'idle')],
-      ['balanced', frame(nowMs + 16, 'charged', 1)],
-      ['high', frame(nowMs + 32, 'summoning', 1, 0, 0.43)],
-    ];
-    for (const [quality, signals] of warmupFrames) {
-      postProcessing.setQuality(QUALITY_PROFILES[quality]);
-      stage.update(signals, quality);
-      postProcessing.update(signals);
-      postProcessing.render();
-    }
-    postProcessing.setQuality(QUALITY_PROFILES[options.quality]);
-    const idle = frame(nowMs + 48, 'idle');
-    stage.update(idle, options.quality);
-    postProcessing.update(idle);
-    postProcessing.clearHistory();
-    postProcessing.render();
-    options.onWarmupReady?.();
+    const warmup = new WarmupController({
+      prepareTextures: async () => {
+        for (const texture of stage.getCharacterTextures()) handle.renderer.initTexture(texture);
+        const backend = handle.renderer.backend as unknown as {
+          gl?: { finish: () => void };
+          device?: { queue?: { onSubmittedWorkDone?: () => Promise<void> } };
+        };
+        if (backend.gl) backend.gl.finish();
+        else if (backend.device?.queue?.onSubmittedWorkDone) await backend.device.queue.onSubmittedWorkDone();
+      },
+      setQuality: (quality) => {
+        handle.setQuality(quality);
+        postProcessing?.setQuality(QUALITY_PROFILES[quality]);
+        resize(window.innerWidth, window.innerHeight);
+      },
+      renderFrame: (signals, quality) => {
+        stage.update(signals, quality);
+        postProcessing?.update(signals);
+        postProcessing?.render();
+      },
+      renderClosedEyesFrame: (signals, quality) => {
+        stage.update(signals, quality);
+        stage.showClosedEyesForWarmup();
+        postProcessing?.update(signals);
+        postProcessing?.render();
+      },
+      clearHistory: () => postProcessing?.clearHistory(),
+      settle: async () => {
+        await handle.renderer.compileAsync(stage.scene, stage.cameraRig.camera, stage.scene);
+        const backend = handle.renderer.backend as unknown as {
+          gl?: { finish: () => void };
+          device?: { queue?: { onSubmittedWorkDone?: () => Promise<void> } };
+        };
+        if (backend.gl) backend.gl.finish();
+        else if (backend.device?.queue?.onSubmittedWorkDone) await backend.device.queue.onSubmittedWorkDone();
+      },
+    });
+    const warmupReport = await warmup.prepare(options.quality);
+    stage.keepCatResident();
+    stage.reset();
+    options.onWarmupReady?.(warmupReport);
 
     let disposed = false;
     let currentQuality = options.quality;

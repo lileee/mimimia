@@ -19,6 +19,7 @@ export class MoonCatRig {
   #pointerNdc = { x: 0, y: 0 };
   #opacity = 0;
   #fill = 0;
+  #keepResident = false;
   #debugPose: 'min' | 'idle' | 'max' = 'idle';
 
   static async create(): Promise<MoonCatRig> {
@@ -42,13 +43,22 @@ export class MoonCatRig {
     this.#revealControls.shadow.value = clamp01(shadow);
     this.#revealControls.fill.value = this.#fill;
     this.#revealControls.opacity.value = this.#opacity;
-    this.layered.setVisible(this.#opacity > 0);
+    this.layered.setVisible(this.#keepResident || this.#opacity > 0);
   }
 
   setPointerNdc(x: number, y: number): void {
     this.#pointerNdc = { x: clamp01((x + 1) / 2) * 2 - 1, y: clamp01((y + 1) / 2) * 2 - 1 };
     this.#gaze.setPointerNdc(this.#pointerNdc.x, this.#pointerNdc.y, true);
     this.root.userData.pointerNdc = { ...this.#pointerNdc };
+  }
+
+  keepResident(): void {
+    this.#keepResident = true;
+    this.layered.setVisible(true);
+  }
+
+  isRevealed(): boolean {
+    return this.#opacity > 0;
   }
 
   setAnchorPosition(x: number, y: number, z: number): void {
@@ -59,8 +69,12 @@ export class MoonCatRig {
     this.#debugPose = pose;
   }
 
+  showClosedEyesForWarmup(): void {
+    this.#setEyes(false);
+  }
+
   update(signals: FrameSignals): void {
-    if (!this.root.visible) return;
+    if (!this.isRevealed()) return;
     const fraction = this.#debugPose === 'min' ? -1 : this.#debugPose === 'max' ? 1 : null;
     if (fraction !== null) {
       this.root.position.copy(this.#anchor);
@@ -91,7 +105,7 @@ export class MoonCatRig {
   getDiagnostics() {
     const gaze = this.#gaze.getState();
     return {
-      visible: this.root.visible,
+      visible: this.isRevealed(),
       reveal: { ...this.root.userData.reveal },
       position: { x: this.root.position.x, y: this.root.position.y, z: this.root.position.z },
       ...gaze,

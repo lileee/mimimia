@@ -1,4 +1,4 @@
-import { Color, Scene } from 'three/webgpu';
+import { Color, Scene, type Texture } from 'three/webgpu';
 
 import type { FrameSignals } from '../app/frameSignals';
 import { MagicalGirlRig, type CharacterDebugPose } from '../character/MagicalGirlRig';
@@ -77,6 +77,22 @@ export class Stage {
     this.magicCircle.reset();
     this.particleSystem.reset();
     this.cameraRig.reset();
+  }
+
+  showClosedEyesForWarmup(): void {
+    this.magicalGirl?.showClosedEyesForWarmup();
+    this.moonCat?.showClosedEyesForWarmup();
+  }
+
+  keepCatResident(): void {
+    this.moonCat?.keepResident();
+  }
+
+  getCharacterTextures(): Texture[] {
+    return [
+      ...(this.magicalGirl?.layered.getTextures() ?? []),
+      ...(this.moonCat?.layered.getTextures() ?? []),
+    ];
   }
 
   dispose(): void {

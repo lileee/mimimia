@@ -142,6 +142,10 @@ export class LayeredSpriteRig {
     return this.#layers.get(name);
   }
 
+  getTextures(): Texture[] {
+    return [...this.#layers.values()].map(({ texture }) => texture);
+  }
+
   setVisible(visible: boolean): void {
     this.root.visible = visible;
   }

@@ -1,6 +1,7 @@
 import { EXPERIENCE_TIMING } from '../config/experience';
 import type { DebugPanel } from '../dev/DebugPanel';
 import { PointerInput, type NormalizedPointerPosition } from '../input/PointerInput';
+import { countRuntimeObjects, type PerformanceSampler } from '../performance/PerformanceSampler';
 import type { QualityController } from '../quality/QualityController';
 import type { QualityTier } from '../quality/qualityProfiles';
 import { ExperienceMachine } from '../state/experienceMachine';
@@ -27,6 +28,7 @@ interface ExperienceControllerOptions {
   ui: AppUI;
   runtime: ExperienceRuntime;
   qualityController: QualityController;
+  performanceSampler?: PerformanceSampler;
   debugPanel?: DebugPanel;
   debugFrame?: DebugFrameState;
   onFrameRendered?: (signals: FrameSignals) => void;
@@ -39,6 +41,7 @@ export class ExperienceController {
   readonly #ui: AppUI;
   #runtime: ExperienceRuntime;
   readonly #qualityController: QualityController;
+  readonly #performanceSampler?: PerformanceSampler;
   readonly #debugPanel?: DebugPanel;
   #quality: QualityTier;
   readonly #machine = new ExperienceMachine();
@@ -56,6 +59,7 @@ export class ExperienceController {
   #qualityNoticeUntil = 0;
   #graphicsHealthy = true;
   #recovering = false;
+  #objectStatsRuntime: ExperienceRuntime | null = null;
 
   constructor(options: ExperienceControllerOptions) {
     this.#canvas = options.canvas;
@@ -63,6 +67,7 @@ export class ExperienceController {
     this.#ui = options.ui;
     this.#runtime = options.runtime;
     this.#qualityController = options.qualityController;
+    this.#performanceSampler = options.performanceSampler;
     this.#quality = options.qualityController.getSnapshot().tier;
     this.#debugPanel = options.debugPanel;
     this.#debugFrame = options.debugFrame;
@@ -126,6 +131,7 @@ export class ExperienceController {
     cancelAnimationFrame(this.#animationFrame);
     this.#animationFrame = 0;
     this.#qualityController.clearSampling();
+    this.#performanceSampler?.clearSamples();
     this.#runtime.stage.reset();
     this.#runtime.audio.reset();
     this.#machine.dispatch({ type: 'RECOVER' }, performance.now());
@@ -180,6 +186,7 @@ export class ExperienceController {
     if (event.type === 'POINTER_DOWN') {
       this.#hintVisible = false;
       this.#hintStartedAt = null;
+      this.#performanceSampler?.beginProfile(nowMs);
     }
     this.#machine.dispatch(event, nowMs);
   };
@@ -213,20 +220,36 @@ export class ExperienceController {
     const signals = this.#signals(nowMs, deltaSeconds);
 
     try {
+      const workStartedAt = performance.now();
       this.#runtime.stage.update(signals, this.#quality);
+      const stageFinishedAt = performance.now();
       this.#runtime.audio.update(signals);
+      const audioFinishedAt = performance.now();
       this.#runtime.postProcessing.update(signals);
+      const postFinishedAt = performance.now();
       this.#updateDiagnostics(signals);
+      const diagnosticsFinishedAt = performance.now();
       this.#runtime.postProcessing.render();
+      const renderFinishedAt = performance.now();
+      this.#performanceSampler?.recordFrameWork(signals.state, {
+        stage: stageFinishedAt - workStartedAt,
+        audio: audioFinishedAt - stageFinishedAt,
+        postprocessing: postFinishedAt - audioFinishedAt,
+        diagnostics: diagnosticsFinishedAt - postFinishedAt,
+        render: renderFinishedAt - diagnosticsFinishedAt,
+        total: renderFinishedAt - workStartedAt,
+      });
     } catch (error) {
       this.#active = false;
       this.#graphicsHealthy = false;
       this.#qualityController.clearSampling();
+      this.#performanceSampler?.clearSamples();
       this.#onRenderFailure?.(error);
       return;
     }
     this.#onFrameRendered?.(signals);
     this.#observeQuality(nowMs, signals.state);
+    this.#observePerformance(nowMs, signals);
     this.#renderUI(nowMs, signals.state);
 
     if (this.#active) this.#animationFrame = requestAnimationFrame(this.#renderFrame);
@@ -248,6 +271,7 @@ export class ExperienceController {
       snapshot = this.#machine.dispatch({ type: 'DISSOLVE_DONE' }, nowMs);
     } else if (snapshot.state === 'summoning' && elapsedMs >= EXPERIENCE_TIMING.summonEndMs) {
       snapshot = this.#machine.dispatch({ type: 'SUMMON_DONE' }, nowMs);
+      this.#performanceSampler?.markSummonComplete(nowMs);
     } else if (snapshot.state === 'resetting' && elapsedMs >= RESETTING_MS) {
       snapshot = this.#machine.dispatch({ type: 'RESET_DONE' }, nowMs);
     }
@@ -297,7 +321,7 @@ export class ExperienceController {
     document.body.dataset.characterReady = 'true';
     document.body.dataset.girlLayerCount = String(stage.magicalGirl?.layered.layerNames.length ?? 0);
     document.body.dataset.catLayerCount = String(stage.moonCat?.layered.layerNames.length ?? 0);
-    document.body.dataset.catVisible = String(stage.moonCat?.root.visible ?? false);
+    document.body.dataset.catVisible = String(stage.moonCat?.isRevealed() ?? false);
     document.body.dataset.magicCircleReady = 'true';
     document.body.dataset.particlesReady = 'true';
     document.body.dataset.summonReady = 'true';
@@ -338,6 +362,7 @@ export class ExperienceController {
 
   readonly #clearQualitySampling = (): void => {
     this.#qualityController.clearSampling();
+    this.#performanceSampler?.clearSamples();
   };
 
   #clearSpellResidue(): void {
@@ -352,5 +377,35 @@ export class ExperienceController {
       dispatch: this.#dispatchInput,
       onPointerMove: (position) => { this.#pointerNdc = position; },
     });
+  }
+
+  #observePerformance(nowMs: number, signals: FrameSignals): void {
+    if (!this.#performanceSampler) return;
+    this.#performanceSampler.observeFrame(nowMs, {
+      visible: document.visibilityState === 'visible',
+      focused: document.hasFocus(),
+      graphicsHealthy: this.#graphicsHealthy,
+      state: signals.state === 'summoning'
+        ? `summoning@${signals.summon.toFixed(3)}`
+        : signals.state,
+    });
+    if (this.#objectStatsRuntime !== this.#runtime) {
+      this.#objectStatsRuntime = this.#runtime;
+      const sceneObjects: Array<{ geometry?: object; material?: object | object[] }> = [];
+      this.#runtime.stage.scene.traverse((object) => {
+        sceneObjects.push(object as unknown as { geometry?: object; material?: object | object[] });
+      });
+      const renderer = this.#runtime.renderer.renderer as unknown as {
+        info?: { memory?: { geometries?: number; textures?: number } };
+      };
+      this.#performanceSampler.setObjectStats(countRuntimeObjects({
+        sceneObjects,
+        rendererInfo: renderer.info,
+        poolCapacity: this.#runtime.stage.particleSystem.getStats().capacity,
+      }));
+    }
+    const snapshot = this.#performanceSampler.getSnapshot();
+    this.#canvas.dataset.performance = JSON.stringify(snapshot);
+    document.body.dataset.performanceComplete = String(snapshot.complete);
   }
 }

@@ -18,7 +18,10 @@
     "art:render-extremes": "node scripts/art/render-layer-extremes.mjs",
     "audio:generate": "node scripts/audio/generate-original-audio.mjs",
     "audio:validate": "node scripts/audio/validate-audio.mjs",
-    "audio:review": "node scripts/audio/render-audio-review.mjs"
+    "audio:review": "node scripts/audio/render-audio-review.mjs",
+    "perf:profile": "node scripts/performance/run-summon-profile.mjs",
+    "perf:soak": "node scripts/performance/run-reset-soak.mjs",
+    "perf:transfer": "node scripts/performance/measure-transfer.mjs"
   },
   "dependencies": {
     "three": "0.185.1"

@@ -7,6 +7,7 @@ import { createExperience, type ExperienceRuntime } from './app/createExperience
 import { ExperienceController, type DebugFrameState } from './app/ExperienceController';
 import { ReadinessGate } from './app/readinessGate';
 import { DebugPanel } from './dev/DebugPanel';
+import { PerformanceSampler } from './performance/PerformanceSampler';
 import { BenchmarkScene } from './quality/BenchmarkScene';
 import { QualityController } from './quality/QualityController';
 import { isQualityTier, type QualityTier } from './quality/qualityProfiles';
@@ -73,6 +74,7 @@ let controller: ExperienceController | null = null;
 let qualityController: QualityController | null = null;
 let benchmarkScene: BenchmarkScene | null = null;
 let graphicsRecovery: GraphicsRecovery | null = null;
+const performanceSampler = new PerformanceSampler();
 let assetCache: ReadonlyMap<string, Uint8Array> = new Map();
 let rendererGeneration = 0;
 const debugPanel = debugMode ? new DebugPanel() : null;
@@ -154,6 +156,7 @@ function startController(debug?: DebugFrameState): void {
     ui,
     runtime,
     qualityController,
+    performanceSampler,
     debugPanel: debugPanel ?? undefined,
     debugFrame: debug,
     onRenderFailure: (error) => {
@@ -171,6 +174,39 @@ function startController(debug?: DebugFrameState): void {
   canvas.hidden = false;
   controller.start();
   setupGraphicsRecovery();
+  if (query.get('performanceTest') === '1') {
+    (window as typeof window & {
+      __mimimiaPerformanceTest?: {
+        snapshot: () => ReturnType<PerformanceSampler['getSnapshot']>;
+        runtimeSnapshot: () => unknown;
+      };
+    }).__mimimiaPerformanceTest = {
+      snapshot: () => performanceSampler.getSnapshot(),
+      runtimeSnapshot: () => {
+        const info = runtime?.renderer.renderer.info as unknown as {
+          memory?: { geometries?: number; textures?: number };
+          render?: { calls?: number; triangles?: number; points?: number; lines?: number };
+        } | undefined;
+        const memory = performance as Performance & { memory?: { usedJSHeapSize?: number } };
+        return {
+          backend: runtime?.renderer.backend ?? null,
+          quality: qualityController?.getSnapshot().tier ?? quality,
+          renderer: {
+            geometries: info?.memory?.geometries ?? 0,
+            textures: info?.memory?.textures ?? 0,
+            calls: info?.render?.calls ?? 0,
+            triangles: info?.render?.triangles ?? 0,
+            points: info?.render?.points ?? 0,
+            lines: info?.render?.lines ?? 0,
+          },
+          particles: runtime?.stage.particleSystem.getStats() ?? null,
+          objects: performanceSampler.getSnapshot().objects,
+          heapUsedBytes: memory.memory?.usedJSHeapSize ?? null,
+          rendererGeneration,
+        };
+      },
+    };
+  }
 }
 
 function setupGraphicsRecovery(): void {
@@ -306,8 +342,11 @@ async function initialize(): Promise<void> {
         document.body.dataset.renderBackend = handle.backend;
         renderLoading();
       },
-      onWarmupReady: () => {
+      onWarmupReady: (report) => {
         gate.mark('warmupReady');
+        document.body.dataset.warmupReady = String(report.ready);
+        document.body.dataset.warmupFrameCount = String(report.frameCount);
+        document.body.dataset.warmupStates = report.states.join(',');
         renderLoading();
       },
     });

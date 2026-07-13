@@ -53,6 +53,10 @@ export class MagicalGirlRig {
     this.#debugPose = pose;
   }
 
+  showClosedEyesForWarmup(): void {
+    this.#setEyes(false);
+  }
+
   update(signals: FrameSignals): void {
     if (this.#debugPose !== 'idle') {
       const fraction = this.#debugPose === 'min' ? -1 : 1;
