@@ -76,7 +76,7 @@ export class ParticleSystem {
   #burstStartedAt: number | null = null;
   #allocatedObjects = 0;
 
-  constructor(seed = 0x53544152) {
+  constructor(seed = 0x4d4f4f4e) {
     this.group.name = 'pooled-spell-particles';
     this.#layout = createParticleLayout(CAPACITY, seed);
     const attributes = createAttributes(this.#layout);

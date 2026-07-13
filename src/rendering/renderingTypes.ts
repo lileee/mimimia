@@ -13,5 +13,6 @@ export interface RendererHandle {
   renderer: WebGPURenderer;
   backend: BackendKind;
   resize: (cssWidth: number, cssHeight: number) => void;
+  setQuality: (quality: QualityTier) => void;
   dispose: () => void;
 }

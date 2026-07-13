@@ -5,6 +5,9 @@ import { AssetLoader } from './assets/AssetLoader';
 import { createExperience, type ExperienceRuntime } from './app/createExperience';
 import { ExperienceController, type DebugFrameState } from './app/ExperienceController';
 import { ReadinessGate } from './app/readinessGate';
+import { DebugPanel } from './dev/DebugPanel';
+import { BenchmarkScene } from './quality/BenchmarkScene';
+import { QualityController } from './quality/QualityController';
 import { isQualityTier, type QualityTier } from './quality/qualityProfiles';
 import type { ExperienceState } from './state/experienceTypes';
 import { AppUI } from './ui/AppUI';
@@ -31,7 +34,8 @@ const ui = new AppUI(uiRoot);
 const query = __MIMIMIA_ALLOW_DEBUG_QUERY__ ? new URLSearchParams(window.location.search) : new URLSearchParams();
 const debugMode = query.get('debug') === '1';
 const requestedQuality = query.get('quality');
-const quality: QualityTier = isQualityTier(requestedQuality) ? requestedQuality : 'high';
+const forcedQuality: QualityTier | null = isQualityTier(requestedQuality) ? requestedQuality : null;
+let quality: QualityTier = forcedQuality ?? 'high';
 const forceWebGL = query.get('backend') === 'webgl2';
 const holdBenchmarkGate = !debugMode && query.get('testGate') === 'benchmark';
 const gate = new ReadinessGate();
@@ -39,7 +43,11 @@ const loader = new AssetLoader(ASSET_MANIFEST);
 let loadProgress = 0;
 let runtime: ExperienceRuntime | null = null;
 let controller: ExperienceController | null = null;
+let qualityController: QualityController | null = null;
+let benchmarkScene: BenchmarkScene | null = null;
+const debugPanel = debugMode ? new DebugPanel() : null;
 let benchmarkReleaseRequested = !holdBenchmarkGate;
+let benchmarkCompleted = false;
 let disposed = false;
 
 const renderLoading = () => {
@@ -100,8 +108,16 @@ function debugFrame(): DebugFrameState {
 }
 
 function startController(debug?: DebugFrameState): void {
-  if (!runtime || controller || disposed) return;
-  controller = new ExperienceController({ canvas, uiRoot, ui, runtime, quality, debugFrame: debug });
+  if (!runtime || !qualityController || controller || disposed) return;
+  controller = new ExperienceController({
+    canvas,
+    uiRoot,
+    ui,
+    runtime,
+    qualityController,
+    debugPanel: debugPanel ?? undefined,
+    debugFrame: debug,
+  });
   document.body.dataset.renderBackend = runtime.renderer.backend;
   document.body.dataset.characterPose = query.get('characterPose') ?? 'idle';
   canvas.hidden = false;
@@ -110,7 +126,7 @@ function startController(debug?: DebugFrameState): void {
 
 function releaseBenchmarkGate(): void {
   benchmarkReleaseRequested = true;
-  gate.mark('benchmarkReady');
+  if (benchmarkCompleted) gate.mark('benchmarkReady');
   if (runtime && gate.isReady()) startController();
   else renderLoading();
 }
@@ -135,6 +151,13 @@ async function initialize(): Promise<void> {
         characterPose: characterPose === 'min' || characterPose === 'max' ? characterPose : 'idle',
         showCat: query.get('showCat') === '1',
       });
+      qualityController = new QualityController({
+        benchmark: { run: async () => 60 },
+        initialTier: quality,
+        forcedMode: true,
+      });
+      document.body.dataset.qualityTier = quality;
+      document.body.dataset.qualityForced = 'true';
       startController(debugFrame());
       return;
     }
@@ -166,6 +189,39 @@ async function initialize(): Promise<void> {
       },
     });
 
+    const benchmarkFpsRaw = query.get('benchmarkFps');
+    const benchmarkFpsValue = benchmarkFpsRaw === null ? Number.NaN : Number(benchmarkFpsRaw);
+    benchmarkScene = new BenchmarkScene({
+      runtime,
+      fpsOverride: Number.isFinite(benchmarkFpsValue) && benchmarkFpsValue >= 0 ? benchmarkFpsValue : undefined,
+    });
+    qualityController = new QualityController({
+      benchmark: benchmarkScene,
+      initialTier: quality,
+      forcedMode: forcedQuality !== null,
+    });
+    document.body.dataset.qualityBenchmark = forcedQuality === null ? 'running' : 'forced';
+    quality = await qualityController.runInitialBenchmark();
+    runtime.setQuality(quality);
+    benchmarkCompleted = true;
+    document.body.dataset.qualityBenchmark = forcedQuality === null ? 'complete' : 'forced';
+    document.body.dataset.qualityBenchmarkDuration = benchmarkScene.getLastDurationMs().toFixed(1);
+    document.body.dataset.qualityTier = quality;
+    document.body.dataset.qualityForced = String(forcedQuality !== null);
+    if (query.get('qualityTest') === '1') {
+      (window as typeof window & {
+        __mimimiaQualityTest?: {
+          requestDowngrade: () => void;
+          snapshot: () => ReturnType<QualityController['getSnapshot']>;
+        };
+      }).__mimimiaQualityTest = {
+        requestDowngrade: () => qualityController?.requestDowngrade(),
+        snapshot: () => {
+          if (!qualityController) throw new Error('Quality unavailable');
+          return qualityController.getSnapshot();
+        },
+      };
+    }
     if (benchmarkReleaseRequested) gate.mark('benchmarkReady');
     if (gate.isReady()) startController();
     else renderLoading();
@@ -180,8 +236,10 @@ async function initialize(): Promise<void> {
 window.addEventListener('pagehide', () => {
   disposed = true;
   loader.cancel();
+  benchmarkScene?.cancel();
   if (controller) controller.dispose();
   else runtime?.dispose();
+  debugPanel?.dispose();
 }, { once: true });
 
 void initialize();

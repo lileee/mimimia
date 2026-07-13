@@ -1,5 +1,7 @@
 import { EXPERIENCE_TIMING } from '../config/experience';
+import type { DebugPanel } from '../dev/DebugPanel';
 import { PointerInput, type NormalizedPointerPosition } from '../input/PointerInput';
+import type { QualityController } from '../quality/QualityController';
 import type { QualityTier } from '../quality/qualityProfiles';
 import { ExperienceMachine } from '../state/experienceMachine';
 import type { ExperienceEvent, ExperienceState } from '../state/experienceTypes';
@@ -24,7 +26,8 @@ interface ExperienceControllerOptions {
   uiRoot: HTMLElement;
   ui: AppUI;
   runtime: ExperienceRuntime;
-  quality: QualityTier;
+  qualityController: QualityController;
+  debugPanel?: DebugPanel;
   debugFrame?: DebugFrameState;
   onFrameRendered?: (signals: FrameSignals) => void;
 }
@@ -33,7 +36,9 @@ export class ExperienceController {
   readonly #canvas: HTMLCanvasElement;
   readonly #ui: AppUI;
   readonly #runtime: ExperienceRuntime;
-  readonly #quality: QualityTier;
+  readonly #qualityController: QualityController;
+  readonly #debugPanel?: DebugPanel;
+  #quality: QualityTier;
   readonly #machine = new ExperienceMachine();
   readonly #debugFrame?: DebugFrameState;
   readonly #onFrameRendered?: (signals: FrameSignals) => void;
@@ -45,12 +50,15 @@ export class ExperienceController {
   #previousTime = performance.now();
   #hintVisible = false;
   #hintStartedAt: number | null = null;
+  #qualityNoticeUntil = 0;
 
   constructor(options: ExperienceControllerOptions) {
     this.#canvas = options.canvas;
     this.#ui = options.ui;
     this.#runtime = options.runtime;
-    this.#quality = options.quality;
+    this.#qualityController = options.qualityController;
+    this.#quality = options.qualityController.getSnapshot().tier;
+    this.#debugPanel = options.debugPanel;
     this.#debugFrame = options.debugFrame;
     this.#onFrameRendered = options.onFrameRendered;
     this.#pointerNdc = options.debugFrame?.pointerNdc ?? { x: 0, y: 0 };
@@ -136,6 +144,7 @@ export class ExperienceController {
     this.#updateDiagnostics(signals);
     this.#runtime.postProcessing.render();
     this.#onFrameRendered?.(signals);
+    this.#observeQuality(nowMs, signals.state);
     this.#renderUI(nowMs, signals.state);
 
     if (this.#active) this.#animationFrame = requestAnimationFrame(this.#renderFrame);
@@ -187,6 +196,7 @@ export class ExperienceController {
       error: null,
       readyToEnter: state === 'entry',
       hintVisible: this.#hintVisible,
+      qualityNotice: nowMs < this.#qualityNoticeUntil,
       debugHidden: this.#debugFrame !== undefined,
     });
   }
@@ -211,5 +221,35 @@ export class ExperienceController {
     document.body.dataset.postprocessingReady = 'true';
     document.body.dataset.experienceState = signals.state;
     document.body.dataset.muted = String(this.#runtime.audio.getSnapshot().muted);
+  }
+
+  #observeQuality(nowMs: number, state: ExperienceState): void {
+    this.#qualityController.observeFrame(nowMs, {
+      visible: document.visibilityState === 'visible',
+      focused: document.hasFocus(),
+      graphicsHealthy: true,
+      state,
+    });
+    const applied = this.#qualityController.applyPendingIfSafe(state);
+    if (applied) {
+      this.#quality = applied;
+      this.#runtime.setQuality(applied);
+      this.#qualityNoticeUntil = nowMs + 2_000;
+    }
+
+    const snapshot = this.#qualityController.getSnapshot();
+    const stats = this.#runtime.stage.particleSystem.getStats();
+    document.body.dataset.qualityTier = snapshot.tier;
+    document.body.dataset.qualityForced = String(snapshot.forcedMode);
+    document.body.dataset.qualityPending = String(snapshot.pendingDowngrade);
+    document.body.dataset.effectiveFps = snapshot.effectiveFps.toFixed(1);
+    this.#debugPanel?.update({
+      backend: this.#runtime.renderer.backend,
+      quality: snapshot.tier,
+      effectiveFps: snapshot.effectiveFps,
+      state,
+      activeObjects: stats.activeCount,
+      allocatedObjects: stats.allocatedObjects,
+    });
   }
 }

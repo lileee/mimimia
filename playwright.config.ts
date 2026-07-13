@@ -4,7 +4,9 @@ export default defineConfig({
   testDir: './tests',
   testMatch: ['e2e/**/*.spec.ts', 'visual/**/*.spec.ts'],
   fullyParallel: false,
-  workers: 4,
+  // GPU-heavy browser scenes become timing-invalid when too many software
+  // graphics contexts compete on the same validation machine.
+  workers: 2,
   retries: 0,
   reporter: 'list',
   use: {

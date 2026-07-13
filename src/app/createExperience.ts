@@ -24,6 +24,7 @@ export interface ExperienceRuntime {
   readonly postProcessing: PostProcessing;
   readonly audio: AudioController;
   readonly quality: QualityTier;
+  setQuality(quality: QualityTier): void;
   resize(width: number, height: number): void;
   dispose(): void;
 }
@@ -96,12 +97,20 @@ export async function createExperience(options: CreateExperienceOptions): Promis
     options.onWarmupReady?.();
 
     let disposed = false;
+    let currentQuality = options.quality;
     return {
       renderer: handle,
       stage,
       postProcessing,
       audio: controller,
-      quality: options.quality,
+      get quality() { return currentQuality; },
+      setQuality: (quality) => {
+        if (quality === currentQuality) return;
+        currentQuality = quality;
+        handle.setQuality(quality);
+        postProcessing?.setQuality(QUALITY_PROFILES[quality]);
+        resize(window.innerWidth, window.innerHeight);
+      },
       resize,
       dispose: () => {
         if (disposed) return;

@@ -31,7 +31,7 @@ export async function createRenderer(
     throw new Error('Renderer initialized without a recognized backend');
   }
 
-  const profile = QUALITY_PROFILES[options.quality];
+  let profile = QUALITY_PROFILES[options.quality];
   const resize = (cssWidth: number, cssHeight: number) => {
     const pixelRatio = Math.min(globalThis.devicePixelRatio || 1, profile.pixelRatioMax);
     renderer.setPixelRatio(pixelRatio);
@@ -49,6 +49,7 @@ export async function createRenderer(
     renderer,
     backend,
     resize,
+    setQuality: (quality) => { profile = QUALITY_PROFILES[quality]; },
     dispose: () => renderer.dispose(),
   };
 }

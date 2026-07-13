@@ -549,6 +549,24 @@ button {
   line-height: 1.8;
 }
 
+.debug-panel {
+  position: fixed;
+  z-index: 30;
+  top: 14px;
+  right: 14px;
+  min-width: 190px;
+  margin: 0;
+  padding: 12px 14px;
+  border: 1px solid rgb(190 211 255 / 24%);
+  background: rgb(6 4 17 / 82%);
+  color: rgb(211 225 255 / 82%);
+  font: 10px/1.7 ui-monospace, SFMono-Regular, Menlo, monospace;
+  letter-spacing: 0.08em;
+  white-space: pre;
+  pointer-events: none;
+  backdrop-filter: blur(12px);
+}
+
 @keyframes orbit-turn {
   to { rotate: 360deg; }
 }
