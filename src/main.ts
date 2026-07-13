@@ -82,11 +82,13 @@ async function initializeRenderer() {
       previousTime = nowMs;
       stage.update(makeSignals(nowMs, deltaSeconds), quality);
       canvas.dataset.magicCircle = JSON.stringify(stage.magicCircle.getSnapshot());
+      canvas.dataset.particleStats = JSON.stringify(stage.particleSystem.getStats());
       await handle.renderer.renderAsync(stage.scene, stage.cameraRig.camera);
       if (active) animationFrame = requestAnimationFrame(renderFrame);
     };
     stage.update(makeSignals(previousTime, 0), quality);
     canvas.dataset.magicCircle = JSON.stringify(stage.magicCircle.getSnapshot());
+    canvas.dataset.particleStats = JSON.stringify(stage.particleSystem.getStats());
     await handle.renderer.renderAsync(stage.scene, stage.cameraRig.camera);
     canvas.dataset.renderReady = 'true';
     document.body.dataset.renderBackend = handle.backend;
@@ -97,6 +99,7 @@ async function initializeRenderer() {
     document.body.dataset.catVisible = String(stage.moonCat?.root.visible ?? false);
     document.body.dataset.characterPose = debugCharacterPose;
     document.body.dataset.magicCircleReady = 'true';
+    document.body.dataset.particlesReady = 'true';
     status.textContent = '月光虚境已就绪';
     animationFrame = requestAnimationFrame(renderFrame);
     window.addEventListener('resize', resize);

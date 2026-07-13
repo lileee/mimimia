@@ -3,6 +3,7 @@ import { Color, Scene } from 'three/webgpu';
 import type { FrameSignals } from '../app/frameSignals';
 import { MagicalGirlRig, type CharacterDebugPose } from '../character/MagicalGirlRig';
 import { MagicCircle } from '../effects/MagicCircle';
+import { ParticleSystem } from '../effects/ParticleSystem';
 import type { QualityTier } from '../quality/qualityProfiles';
 import { MoonCatRig } from '../summon/MoonCatRig';
 import { CameraRig } from './CameraRig';
@@ -18,6 +19,7 @@ export class Stage {
   readonly cameraRig = new CameraRig();
   readonly #backdrop = createProceduralBackdrop();
   readonly magicCircle = new MagicCircle();
+  readonly particleSystem = new ParticleSystem();
   readonly #options: StageOptions;
   magicalGirl: MagicalGirlRig | null = null;
   moonCat: MoonCatRig | null = null;
@@ -25,7 +27,7 @@ export class Stage {
   constructor(options: StageOptions = {}) {
     this.#options = options;
     this.scene.background = new Color(0x0a061b);
-    this.scene.add(this.#backdrop.group, this.magicCircle.group);
+    this.scene.add(this.#backdrop.group, this.magicCircle.group, this.particleSystem.group);
   }
 
   async loadCharacters(): Promise<void> {
@@ -53,6 +55,7 @@ export class Stage {
     }
     this.#backdrop.update(signals.nowMs, quality);
     this.magicCircle.update(signals);
+    this.particleSystem.update(signals, quality);
     this.magicalGirl?.update(signals);
     this.moonCat?.setPointerNdc(signals.pointerNdc.x, signals.pointerNdc.y);
     this.moonCat?.update(signals);
@@ -66,6 +69,7 @@ export class Stage {
     this.magicalGirl?.dispose();
     this.moonCat?.dispose();
     this.magicCircle.dispose();
+    this.particleSystem.dispose();
     this.#backdrop.dispose();
     this.scene.clear();
   }
