@@ -4,6 +4,7 @@ export default defineConfig({
   testDir: './tests',
   testMatch: ['e2e/**/*.spec.ts', 'visual/**/*.spec.ts'],
   fullyParallel: false,
+  workers: 4,
   retries: 0,
   reporter: 'list',
   use: {

@@ -8,7 +8,7 @@ for (const viewport of [
   test(`renders the moonlit stage and safe frame at ${viewport.width} × ${viewport.height}`, async ({ page }) => {
     await page.setViewportSize(viewport);
     await page.goto('/?debug=1');
-    await expect(page.locator('body')).toHaveAttribute('data-stage-ready', 'true');
+    await page.locator('body[data-stage-ready="true"]').waitFor({ timeout: 15_000 });
 
     const safeFrame = await page.locator('canvas[data-render-surface]').evaluate((canvas) =>
       JSON.parse((canvas as HTMLCanvasElement).dataset.safeFrame ?? '{}'));

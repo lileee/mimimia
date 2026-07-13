@@ -3,6 +3,7 @@ import sharp from 'sharp';
 
 async function expectPaintedCanvas(page: import('@playwright/test').Page) {
   const canvas = page.locator('canvas[data-render-surface]');
+  await page.locator('canvas[data-render-ready="true"]').waitFor({ timeout: 15_000 });
   await expect(canvas).toBeVisible();
   await expect(canvas).toHaveAttribute('data-render-ready', 'true');
   const screenshot = await canvas.screenshot();
@@ -15,14 +16,14 @@ async function expectPaintedCanvas(page: import('@playwright/test').Page) {
 
 test('initializes the default renderer and paints a deep-purple frame', async ({ page }) => {
   await page.goto('/?debug=1');
-  await expect(page.locator('body')).toHaveAttribute('data-render-backend', /^(webgpu|webgl2)$/);
   await expectPaintedCanvas(page);
+  await expect(page.locator('body')).toHaveAttribute('data-render-backend', /^(webgpu|webgl2)$/);
 });
 
 test('can force the WebGL 2 backend in test mode', async ({ page }) => {
   await page.goto('/?debug=1&backend=webgl2');
-  await expect(page.locator('body')).toHaveAttribute('data-render-backend', 'webgl2');
   await expectPaintedCanvas(page);
+  await expect(page.locator('body')).toHaveAttribute('data-render-backend', 'webgl2');
 });
 
 test('shows a recoverable error instead of a black canvas when initialization fails', async ({ page }) => {

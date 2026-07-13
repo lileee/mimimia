@@ -39,6 +39,7 @@ const debugExperienceState: ExperienceState = experienceStateValue === 'charging
   || experienceStateValue === 'charged'
   || experienceStateValue === 'dissolving'
   || experienceStateValue === 'summoning'
+  || experienceStateValue === 'complete'
   ? experienceStateValue
   : 'idle';
 const numberQuery = (name: string, fallback: number) => {
@@ -48,6 +49,8 @@ const numberQuery = (name: string, fallback: number) => {
 const debugCharge = numberQuery('charge', debugExperienceState === 'charged' ? 1 : 0);
 const debugDissolve = numberQuery('dissolve', 0);
 const debugSummon = numberQuery('summon', 0);
+const debugPointerX = Math.min(1, Math.max(-1, Number(query.get('pointerX')) || 0));
+const debugPointerY = Math.min(1, Math.max(-1, Number(query.get('pointerY')) || 0));
 let disposeRenderer: (() => void) | undefined;
 
 async function initializeRenderer() {
@@ -75,7 +78,7 @@ async function initializeRenderer() {
       charge: debugCharge,
       dissolve: debugDissolve,
       summon: debugSummon,
-      pointerNdc: { x: 0, y: 0 },
+      pointerNdc: { x: debugPointerX, y: debugPointerY },
     });
     const renderFrame = async (nowMs: number) => {
       const deltaSeconds = Math.min(0.1, Math.max(0, (nowMs - previousTime) / 1000));
@@ -83,12 +86,17 @@ async function initializeRenderer() {
       stage.update(makeSignals(nowMs, deltaSeconds), quality);
       canvas.dataset.magicCircle = JSON.stringify(stage.magicCircle.getSnapshot());
       canvas.dataset.particleStats = JSON.stringify(stage.particleSystem.getStats());
+      canvas.dataset.summon = JSON.stringify(stage.summonDirector?.getSnapshot() ?? {});
+      canvas.dataset.cat = JSON.stringify(stage.moonCat?.getDiagnostics() ?? {});
+      document.body.dataset.catVisible = String(stage.moonCat?.root.visible ?? false);
       await handle.renderer.renderAsync(stage.scene, stage.cameraRig.camera);
       if (active) animationFrame = requestAnimationFrame(renderFrame);
     };
     stage.update(makeSignals(previousTime, 0), quality);
     canvas.dataset.magicCircle = JSON.stringify(stage.magicCircle.getSnapshot());
     canvas.dataset.particleStats = JSON.stringify(stage.particleSystem.getStats());
+    canvas.dataset.summon = JSON.stringify(stage.summonDirector?.getSnapshot() ?? {});
+    canvas.dataset.cat = JSON.stringify(stage.moonCat?.getDiagnostics() ?? {});
     await handle.renderer.renderAsync(stage.scene, stage.cameraRig.camera);
     canvas.dataset.renderReady = 'true';
     document.body.dataset.renderBackend = handle.backend;
@@ -100,6 +108,8 @@ async function initializeRenderer() {
     document.body.dataset.characterPose = debugCharacterPose;
     document.body.dataset.magicCircleReady = 'true';
     document.body.dataset.particlesReady = 'true';
+    document.body.dataset.summonReady = 'true';
+    document.body.dataset.experienceState = debugExperienceState;
     status.textContent = '月光虚境已就绪';
     animationFrame = requestAnimationFrame(renderFrame);
     window.addEventListener('resize', resize);

@@ -166,6 +166,13 @@ export class LayeredSpriteRig {
       + this.definition.worldHeight * layer.definition.motionRange.translateYPercent * 0.01 * translateYFraction;
   }
 
+  setLayerOffsetWorld(name: string, x: number, y: number): void {
+    const layer = this.#layers.get(name);
+    if (!layer) return;
+    layer.pivot.position.x = layer.basePivotPosition.x + x;
+    layer.pivot.position.y = layer.basePivotPosition.y + y;
+  }
+
   reset(): void {
     this.root.position.set(0, 0, 0);
     this.root.rotation.set(0, 0, 0);

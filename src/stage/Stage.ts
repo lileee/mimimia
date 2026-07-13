@@ -6,6 +6,7 @@ import { MagicCircle } from '../effects/MagicCircle';
 import { ParticleSystem } from '../effects/ParticleSystem';
 import type { QualityTier } from '../quality/qualityProfiles';
 import { MoonCatRig } from '../summon/MoonCatRig';
+import { SummonDirector } from '../summon/SummonDirector';
 import { CameraRig } from './CameraRig';
 import { createProceduralBackdrop } from './proceduralBackdrop';
 
@@ -23,6 +24,7 @@ export class Stage {
   readonly #options: StageOptions;
   magicalGirl: MagicalGirlRig | null = null;
   moonCat: MoonCatRig | null = null;
+  summonDirector: SummonDirector | null = null;
 
   constructor(options: StageOptions = {}) {
     this.#options = options;
@@ -37,6 +39,7 @@ export class Stage {
     ]);
     this.magicalGirl = magicalGirl;
     this.moonCat = moonCat;
+    this.summonDirector = new SummonDirector(moonCat, this.particleSystem);
     magicalGirl.setDebugPose(this.#options.characterPose ?? 'idle');
     moonCat.setDebugPose(this.#options.characterPose ?? 'idle');
     if (this.#options.showCat) moonCat.setReveal(0, 1, 1);
@@ -57,6 +60,7 @@ export class Stage {
     this.magicCircle.update(signals);
     this.particleSystem.update(signals, quality);
     this.magicalGirl?.update(signals);
+    if (!this.#options.showCat) this.summonDirector?.update(signals);
     this.moonCat?.setPointerNdc(signals.pointerNdc.x, signals.pointerNdc.y);
     this.moonCat?.update(signals);
   }
