@@ -36,6 +36,16 @@ body {
   pointer-events: none;
 }
 
+#scene-canvas-host canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+#scene-canvas-host canvas[hidden] {
+  display: none;
+}
+
 #ui-root {
   display: grid;
   place-items: center;
