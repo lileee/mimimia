@@ -1,18 +1,42 @@
 import { Color, Scene } from 'three/webgpu';
 
 import type { FrameSignals } from '../app/frameSignals';
+import { MagicalGirlRig, type CharacterDebugPose } from '../character/MagicalGirlRig';
 import type { QualityTier } from '../quality/qualityProfiles';
+import { MoonCatRig } from '../summon/MoonCatRig';
 import { CameraRig } from './CameraRig';
 import { createProceduralBackdrop } from './proceduralBackdrop';
+
+interface StageOptions {
+  characterPose?: CharacterDebugPose;
+  showCat?: boolean;
+}
 
 export class Stage {
   readonly scene = new Scene();
   readonly cameraRig = new CameraRig();
   readonly #backdrop = createProceduralBackdrop();
+  readonly #options: StageOptions;
+  magicalGirl: MagicalGirlRig | null = null;
+  moonCat: MoonCatRig | null = null;
 
-  constructor() {
+  constructor(options: StageOptions = {}) {
+    this.#options = options;
     this.scene.background = new Color(0x0a061b);
     this.scene.add(this.#backdrop.group);
+  }
+
+  async loadCharacters(): Promise<void> {
+    const [magicalGirl, moonCat] = await Promise.all([
+      MagicalGirlRig.create(),
+      MoonCatRig.create(),
+    ]);
+    this.magicalGirl = magicalGirl;
+    this.moonCat = moonCat;
+    magicalGirl.setDebugPose(this.#options.characterPose ?? 'idle');
+    moonCat.setDebugPose(this.#options.characterPose ?? 'idle');
+    if (this.#options.showCat) moonCat.setReveal(0, 1, 1);
+    this.scene.add(magicalGirl.root, moonCat.root);
   }
 
   update(signals: FrameSignals, quality: QualityTier): void {
@@ -26,6 +50,9 @@ export class Stage {
       this.cameraRig.reset();
     }
     this.#backdrop.update(signals.nowMs, quality);
+    this.magicalGirl?.update(signals);
+    this.moonCat?.setPointerNdc(signals.pointerNdc.x, signals.pointerNdc.y);
+    this.moonCat?.update(signals);
   }
 
   resize(width: number, height: number): void {
@@ -33,6 +60,8 @@ export class Stage {
   }
 
   dispose(): void {
+    this.magicalGirl?.dispose();
+    this.moonCat?.dispose();
     this.#backdrop.dispose();
     this.scene.clear();
   }

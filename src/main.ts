@@ -31,13 +31,19 @@ const query = __MIMIMIA_ALLOW_DEBUG_QUERY__ ? new URLSearchParams(window.locatio
 const qualityValue = query.get('quality');
 const quality = isQualityTier(qualityValue) ? qualityValue : 'high';
 const forceWebGL = query.get('backend') === 'webgl2';
+const characterPose = query.get('characterPose');
+const debugCharacterPose = characterPose === 'min' || characterPose === 'max' ? characterPose : 'idle';
 let disposeRenderer: (() => void) | undefined;
 
 async function initializeRenderer() {
   try {
     if (query.get('fault') === 'renderer-init') throw new Error('Injected renderer initialization failure');
     const handle = await createRenderer(canvas, { forceWebGL, quality });
-    const stage = new Stage();
+    const stage = new Stage({
+      characterPose: debugCharacterPose,
+      showCat: query.get('showCat') === '1',
+    });
+    await stage.loadCharacters();
     const resize = () => {
       handle.resize(window.innerWidth, window.innerHeight);
       stage.resize(window.innerWidth, window.innerHeight);
@@ -67,6 +73,11 @@ async function initializeRenderer() {
     canvas.dataset.renderReady = 'true';
     document.body.dataset.renderBackend = handle.backend;
     document.body.dataset.stageReady = 'true';
+    document.body.dataset.characterReady = 'true';
+    document.body.dataset.girlLayerCount = String(stage.magicalGirl?.layered.layerNames.length ?? 0);
+    document.body.dataset.catLayerCount = String(stage.moonCat?.layered.layerNames.length ?? 0);
+    document.body.dataset.catVisible = String(stage.moonCat?.root.visible ?? false);
+    document.body.dataset.characterPose = debugCharacterPose;
     status.textContent = '月光虚境已就绪';
     animationFrame = requestAnimationFrame(renderFrame);
     window.addEventListener('resize', resize);

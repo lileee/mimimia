@@ -7,10 +7,10 @@ async function expectPaintedCanvas(page: import('@playwright/test').Page) {
   await expect(canvas).toHaveAttribute('data-render-ready', 'true');
   const screenshot = await canvas.screenshot();
   const { data, info } = await sharp(screenshot).removeAlpha().raw().toBuffer({ resolveWithObject: true });
-  const offset = (Math.floor(info.height / 2) * info.width + Math.floor(info.width / 2)) * info.channels;
-  const center = [...data.subarray(offset, offset + 3)];
-  expect(center).not.toEqual([0, 0, 0]);
-  expect(center[2]).toBeGreaterThan(center[0]);
+  const offset = (Math.floor(info.height * 0.92) * info.width + Math.floor(info.width * 0.08)) * info.channels;
+  const background = [...data.subarray(offset, offset + 3)];
+  expect(background).not.toEqual([0, 0, 0]);
+  expect(background[2]).toBeGreaterThan(background[0]);
 }
 
 test('initializes the default renderer and paints a deep-purple frame', async ({ page }) => {
