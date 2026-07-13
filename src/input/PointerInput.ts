@@ -11,6 +11,7 @@ interface PointerInputOptions {
   onPointerMove: (position: NormalizedPointerPosition) => void;
   windowTarget?: EventTarget;
   documentTarget?: Document;
+  clock?: () => number;
 }
 
 const isHoldingState = (state: ExperienceState) => state === 'charging' || state === 'charged';
@@ -22,6 +23,7 @@ export class PointerInput {
   readonly #options: PointerInputOptions;
   readonly #windowTarget: EventTarget;
   readonly #documentTarget: Document;
+  readonly #clock: () => number;
 
   constructor(canvas: HTMLCanvasElement, uiRoot: HTMLElement, options: PointerInputOptions) {
     this.#canvas = canvas;
@@ -29,6 +31,7 @@ export class PointerInput {
     this.#options = options;
     this.#windowTarget = options.windowTarget ?? window;
     this.#documentTarget = options.documentTarget ?? document;
+    this.#clock = options.clock ?? (() => performance.now());
     this.#bind();
   }
 
@@ -38,6 +41,7 @@ export class PointerInput {
     this.#canvas.removeEventListener('pointerleave', this.#onPointerCancel);
     this.#canvas.removeEventListener('pointercancel', this.#onPointerCancel);
     this.#canvas.removeEventListener('pointermove', this.#onPointerMove);
+    this.#canvas.removeEventListener('contextmenu', this.#onContextMenu);
     this.#uiRoot.removeEventListener('pointerdown', this.#stopUiPointer);
     this.#uiRoot.removeEventListener('pointerup', this.#stopUiPointer);
     this.#windowTarget.removeEventListener('blur', this.#onWindowBlur);
@@ -50,6 +54,7 @@ export class PointerInput {
     this.#canvas.addEventListener('pointerleave', this.#onPointerCancel);
     this.#canvas.addEventListener('pointercancel', this.#onPointerCancel);
     this.#canvas.addEventListener('pointermove', this.#onPointerMove);
+    this.#canvas.addEventListener('contextmenu', this.#onContextMenu);
     this.#uiRoot.addEventListener('pointerdown', this.#stopUiPointer);
     this.#uiRoot.addEventListener('pointerup', this.#stopUiPointer);
     this.#windowTarget.addEventListener('blur', this.#onWindowBlur);
@@ -59,18 +64,18 @@ export class PointerInput {
   readonly #onPointerDown = (event: PointerEvent): void => {
     if (event.button !== 0 || this.#options.getState() !== 'idle') return;
     this.#canvas.setPointerCapture(event.pointerId);
-    this.#options.dispatch({ type: 'POINTER_DOWN' }, event.timeStamp);
+    this.#options.dispatch({ type: 'POINTER_DOWN' }, this.#eventTime(event));
     event.preventDefault();
   };
 
   readonly #onPointerUp = (event: PointerEvent): void => {
     if (event.button !== 0 || !isHoldingState(this.#options.getState())) return;
-    this.#options.dispatch({ type: 'POINTER_UP' }, event.timeStamp);
+    this.#options.dispatch({ type: 'POINTER_UP' }, this.#eventTime(event));
     event.preventDefault();
   };
 
   readonly #onPointerCancel = (event: Event): void => {
-    if (isHoldingState(this.#options.getState())) this.#options.dispatch({ type: 'POINTER_CANCEL' }, event.timeStamp);
+    if (isHoldingState(this.#options.getState())) this.#options.dispatch({ type: 'POINTER_CANCEL' }, this.#eventTime(event));
   };
 
   readonly #onPointerMove = (event: PointerEvent): void => {
@@ -81,17 +86,28 @@ export class PointerInput {
     this.#options.onPointerMove({ x: clampNdc(x), y: clampNdc(y) });
   };
 
+  readonly #onContextMenu = (event: Event): void => {
+    event.preventDefault();
+  };
+
+  #eventTime(event: Event): number {
+    const nowMs = this.#clock();
+    return Number.isFinite(event.timeStamp) && Math.abs(event.timeStamp - nowMs) <= 60_000
+      ? event.timeStamp
+      : nowMs;
+  }
+
   readonly #stopUiPointer = (event: Event): void => {
     event.stopPropagation();
   };
 
   readonly #onWindowBlur = (event: Event): void => {
-    if (isHoldingState(this.#options.getState())) this.#options.dispatch({ type: 'POINTER_CANCEL' }, event.timeStamp);
+    if (isHoldingState(this.#options.getState())) this.#options.dispatch({ type: 'POINTER_CANCEL' }, this.#eventTime(event));
   };
 
   readonly #onVisibilityChange = (event: Event): void => {
     if (this.#documentTarget.hidden && isHoldingState(this.#options.getState())) {
-      this.#options.dispatch({ type: 'POINTER_CANCEL' }, event.timeStamp);
+      this.#options.dispatch({ type: 'POINTER_CANCEL' }, this.#eventTime(event));
     }
   };
 }

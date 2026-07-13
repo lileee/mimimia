@@ -36,6 +36,7 @@ function setup(initialState: ExperienceState = 'idle') {
     onPointerMove: (position) => positions.push(position),
     windowTarget,
     documentTarget: documentTarget as unknown as Document,
+    clock: () => 200,
   });
   return { canvas, uiRoot, windowTarget, documentTarget, events, eventTimes, positions, input, setState: (value: ExperienceState) => { state = value; } };
 }
@@ -43,6 +44,9 @@ function setup(initialState: ExperienceState = 'idle') {
 describe('PointerInput', () => {
   it('starts only a primary-button spell from idle and captures the pointer', () => {
     const fixture = setup();
+    const menu = pointerEvent('contextmenu');
+    fixture.canvas.dispatchEvent(menu);
+    expect(menu.defaultPrevented).toBe(true);
     fixture.canvas.dispatchEvent(pointerEvent('pointerdown', { button: 2, pointerId: 3 }));
     expect(fixture.events).toEqual([]);
 
@@ -56,6 +60,12 @@ describe('PointerInput', () => {
     const fixture = setup();
     fixture.canvas.dispatchEvent(pointerEvent('pointerdown', { button: 0, pointerId: 7, timeStamp: 123 }));
     expect(fixture.eventTimes).toEqual([123]);
+  });
+
+  it('normalizes timestamps that use a different browser time origin', () => {
+    const fixture = setup();
+    fixture.canvas.dispatchEvent(pointerEvent('pointerdown', { button: 0, pointerId: 7, timeStamp: 803_901_087_079 }));
+    expect(fixture.eventTimes).toEqual([200]);
   });
 
   it('does not start a spell while summoning or complete', () => {

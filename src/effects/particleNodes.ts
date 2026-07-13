@@ -87,6 +87,8 @@ export function createParticleNodeMaterial(
 
   const faceDistance = length(vec2(position.x.div(0.62), position.y.sub(3.55).div(0.48)));
   const faceSafety = mix(float(0.15), float(1), smoothstep(float(0.8), float(1.15), faceDistance));
+  const chestDistance = length(vec2(position.x.div(0.82), position.y.sub(2.95).div(0.62)));
+  const chestSafety = mix(float(0.18), float(1), smoothstep(float(0.82), float(1.2), chestDistance));
   const radial = length(uv().sub(vec2(0.5, 0.5)));
   const softEdge = oneMinus(smoothstep(float(0.12), float(0.5), radial));
   const twinkle = time.mul(2.7).add(seed.mul(19)).sin().mul(0.22).add(0.78);
@@ -102,6 +104,6 @@ export function createParticleNodeMaterial(
   material.positionNode = position;
   material.sizeNode = size.mul(twinkle.mul(0.22).add(0.89)).mul(trailFade);
   material.colorNode = mix(color(0x8dbbff), color(0xe2c5ff), seed);
-  material.opacityNode = softEdge.mul(opacity).mul(twinkle).mul(faceSafety).mul(trailFade);
+  material.opacityNode = softEdge.mul(opacity).mul(twinkle).mul(faceSafety).mul(chestSafety).mul(trailFade);
   return { material, controls: { time, charge, dissolve, burstProgress, mode, opacity } };
 }

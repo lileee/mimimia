@@ -19,6 +19,11 @@ export interface CameraSafeFrame {
   shoeBottom: { x: number; y: number };
   faceCenter: { x: number; y: number };
   magicCircleCenter: { x: number; y: number };
+  magicCircleTop: { x: number; y: number };
+  waistCenter: { x: number; y: number };
+  chestCenter: { x: number; y: number };
+  moonCenter: { x: number; y: number };
+  catCenter: { x: number; y: number };
   leftEdge: { x: number; y: number };
   rightEdge: { x: number; y: number };
 }
@@ -82,6 +87,11 @@ export class CameraRig {
       shoeBottom: project(new Vector3(0, 0, 0)),
       faceCenter: project(new Vector3(0, 3.55, 0)),
       magicCircleCenter: project(new Vector3(0, 0.02, 0)),
+      magicCircleTop: project(new Vector3(0, 2.235, 0)),
+      waistCenter: project(new Vector3(0, 2.45, 0)),
+      chestCenter: project(new Vector3(0, 2.95, 0)),
+      moonCenter: project(new Vector3(-3.25, 3.8, -3.5)),
+      catCenter: project(new Vector3(1.28, 3.02, 0)),
       leftEdge: project(new Vector3(-1.65, 2.4, 0)),
       rightEdge: project(new Vector3(1.65, 2.4, 0)),
     };

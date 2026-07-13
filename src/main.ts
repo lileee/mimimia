@@ -36,6 +36,7 @@ document.body.append(app);
 const ui = new AppUI(uiRoot);
 const query = __MIMIMIA_ALLOW_DEBUG_QUERY__ ? new URLSearchParams(window.location.search) : new URLSearchParams();
 const debugMode = query.get('debug') === '1';
+const visualTestMode = debugMode && query.get('visualTest') === '1';
 const fault = query.get('fault');
 const assetFault = fault === 'music' || fault === 'decorative' || fault === 'girl' || fault === 'cat';
 const requestedQuality = query.get('quality');
@@ -77,7 +78,7 @@ let graphicsRecovery: GraphicsRecovery | null = null;
 const performanceSampler = new PerformanceSampler();
 let assetCache: ReadonlyMap<string, Uint8Array> = new Map();
 let rendererGeneration = 0;
-const debugPanel = debugMode ? new DebugPanel() : null;
+const debugPanel = debugMode && !visualTestMode ? new DebugPanel() : null;
 let benchmarkReleaseRequested = !holdBenchmarkGate;
 let benchmarkCompleted = false;
 let disposed = false;
@@ -136,6 +137,8 @@ function debugFrame(): DebugFrameState {
     || value === 'complete'
     ? value
     : 'idle';
+  const fixedTimeRaw = query.get('frameTimeMs');
+  const fixedTime = fixedTimeRaw === null ? Number.NaN : Number(fixedTimeRaw);
   return {
     state,
     charge: numberQuery('charge', state === 'charged' ? 1 : 0),
@@ -145,6 +148,7 @@ function debugFrame(): DebugFrameState {
       x: Math.min(1, Math.max(-1, Number(query.get('pointerX')) || 0)),
       y: Math.min(1, Math.max(-1, Number(query.get('pointerY')) || 0)),
     },
+    fixedNowMs: Number.isFinite(fixedTime) ? Math.max(0, fixedTime) : undefined,
   };
 }
 
@@ -303,6 +307,7 @@ async function initialize(): Promise<void> {
         forceWebGL,
         characterPose: characterPose === 'min' || characterPose === 'max' ? characterPose : 'idle',
         showCat: query.get('showCat') === '1',
+        hideParticles: visualTestMode && query.get('hideParticles') === '1',
       });
       assetCache = new Map();
       qualityController = new QualityController({

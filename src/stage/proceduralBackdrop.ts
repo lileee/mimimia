@@ -13,7 +13,7 @@ import {
   PointsMaterial,
   RingGeometry,
 } from 'three/webgpu';
-import { color, float, length, mx_noise_float, oneMinus, smoothstep, time, uv, vec2 } from 'three/tsl';
+import { color, float, length, mx_noise_float, oneMinus, smoothstep, uniform, uv, vec2 } from 'three/tsl';
 
 import { QUALITY_PROFILES, type QualityTier } from '../quality/qualityProfiles';
 import { LAYER_ORDER } from './layerOrder';
@@ -91,11 +91,13 @@ export function createProceduralBackdrop(): ProceduralBackdrop {
   materials.push(starMaterial);
 
   const mistLayers: Mesh[] = [];
+  const mistTimes: Array<{ value: number }> = [];
   for (let index = 0; index < QUALITY_PROFILES.high.fogLayers; index += 1) {
     const geometry = new PlaneGeometry(12, 3.6);
     const material = new MeshBasicNodeMaterial({ transparent: true, depthWrite: false, depthTest: false, side: DoubleSide });
     const coordinates = uv();
-    const noise = mx_noise_float(coordinates.mul(3.2).add(vec2(time.mul(0.018 + index * 0.006), float(index * 1.7))));
+    const mistTime = uniform(0);
+    const noise = mx_noise_float(coordinates.mul(3.2).add(vec2(mistTime.mul(0.018 + index * 0.006), float(index * 1.7))));
     const edge = smoothstep(float(0), float(0.2), coordinates.y)
       .mul(smoothstep(float(0), float(0.2), oneMinus(coordinates.y)))
       .mul(smoothstep(float(0), float(0.12), coordinates.x))
@@ -107,6 +109,7 @@ export function createProceduralBackdrop(): ProceduralBackdrop {
     mist.renderOrder = LAYER_ORDER.moonAndMist.min + 20 + index;
     group.add(mist);
     mistLayers.push(mist);
+    mistTimes.push(mistTime);
     geometries.push(geometry);
     materials.push(material);
   }
@@ -126,6 +129,7 @@ export function createProceduralBackdrop(): ProceduralBackdrop {
 
   let activeQuality: QualityTier | undefined;
   const update = (nowMs: number, quality: QualityTier) => {
+    mistTimes.forEach((control) => { control.value = nowMs / 1_000; });
     stars.rotation.z = Math.sin(nowMs * 0.000035) * 0.01;
     moon.rotation.z = Math.sin(nowMs * 0.00008) * 0.008;
     if (quality !== activeQuality) {

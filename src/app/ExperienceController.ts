@@ -20,6 +20,7 @@ export interface DebugFrameState {
   dissolve: number;
   summon: number;
   pointerNdc: NormalizedPointerPosition;
+  fixedNowMs?: number;
 }
 
 interface ExperienceControllerOptions {
@@ -252,14 +253,17 @@ export class ExperienceController {
     this.#observePerformance(nowMs, signals);
     this.#renderUI(nowMs, signals.state);
 
-    if (this.#active) this.#animationFrame = requestAnimationFrame(this.#renderFrame);
+    if (this.#active && this.#debugFrame?.fixedNowMs === undefined) {
+      this.#animationFrame = requestAnimationFrame(this.#renderFrame);
+    }
   };
 
   #signals(nowMs: number, deltaSeconds: number): FrameSignals {
     if (this.#debugFrame) {
+      const frameNowMs = this.#debugFrame.fixedNowMs ?? nowMs;
       return {
-        nowMs,
-        deltaSeconds,
+        nowMs: frameNowMs,
+        deltaSeconds: this.#debugFrame.fixedNowMs === undefined ? deltaSeconds : 0,
         ...this.#debugFrame,
         pointerNdc: this.#pointerNdc,
       };

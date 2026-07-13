@@ -5,10 +5,13 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
+    "typecheck": "tsc --noEmit",
     "build": "tsc --noEmit && vite build",
     "test:unit": "vitest",
     "test:e2e": "playwright test",
-    "test:visual": "playwright test tests/visual",
+    "test:visual": "playwright test tests/visual --project=chromium-webgl2",
+    "test:functional": "playwright test tests/e2e/full-flow.spec.ts",
+    "test:acceptance": "node scripts/testing/run-acceptance.mjs",
     "test:all": "npm run test:unit -- --run && npm run test:e2e",
     "assets:private-check": "node scripts/assets/verify-private-boundary.mjs",
     "assets:ledger-check": "node scripts/assets/verify-ledger.mjs",
@@ -21,7 +24,8 @@
     "audio:review": "node scripts/audio/render-audio-review.mjs",
     "perf:profile": "node scripts/performance/run-summon-profile.mjs",
     "perf:soak": "node scripts/performance/run-reset-soak.mjs",
-    "perf:transfer": "node scripts/performance/measure-transfer.mjs"
+    "perf:transfer": "node scripts/performance/measure-transfer.mjs",
+    "rendering:forbidden-check": "node scripts/testing/assert-no-forbidden-rendering.mjs"
   },
   "dependencies": {
     "three": "0.185.1"

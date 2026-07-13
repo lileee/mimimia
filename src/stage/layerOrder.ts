@@ -14,3 +14,9 @@ export const FACE_PARTICLE_SAFETY_ELLIPSE = {
   radius: { x: 0.62, y: 0.48 },
   opacityMultiplier: 0.15,
 } as const;
+
+export const CHEST_PARTICLE_SAFETY_ELLIPSE = {
+  center: { x: 0, y: 2.95 },
+  radius: { x: 0.82, y: 0.62 },
+  opacityMultiplier: 0.18,
+} as const;

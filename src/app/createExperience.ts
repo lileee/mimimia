@@ -15,6 +15,7 @@ export interface CreateExperienceOptions {
   forceWebGL?: boolean;
   characterPose?: CharacterDebugPose;
   showCat?: boolean;
+  hideParticles?: boolean;
   onRendererReady?: (handle: RendererHandle) => void;
   onWarmupReady?: (report: WarmupReport) => void;
 }
@@ -31,7 +32,11 @@ export interface ExperienceRuntime {
 }
 
 export async function createExperience(options: CreateExperienceOptions): Promise<ExperienceRuntime> {
-  const stage = new Stage({ characterPose: options.characterPose, showCat: options.showCat });
+  const stage = new Stage({
+    characterPose: options.characterPose,
+    showCat: options.showCat,
+    hideParticles: options.hideParticles,
+  });
   let renderer: RendererHandle | null = null;
   let audio: AudioController | null = null;
   let postProcessing: PostProcessing | null = null;
