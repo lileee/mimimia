@@ -1,4 +1,7 @@
 import { chromium } from '@playwright/test';
+import { mkdir } from 'node:fs/promises';
+import { arch, platform, release, totalmem } from 'node:os';
+import { dirname, resolve } from 'node:path';
 
 import {
   argument,
@@ -13,8 +16,15 @@ import {
 const baseUrl = argument('url', LOCAL_URL);
 const outputPath = argument('output', 'test-results/performance/summon-profile.json');
 const headed = argument('headed', process.env.CI ? '0' : '1') === '1';
+const requestedBackend = argument('backend');
+const requestedQuality = argument('quality');
+const requestedChannel = argument('channel');
+const screenshotPath = argument('screenshot');
 const stopServer = await ensureServer(baseUrl);
-const browser = await chromium.launch({ headless: !headed });
+const browser = await chromium.launch({
+  headless: !headed,
+  channel: requestedChannel || undefined,
+});
 
 try {
   const context = await browser.newContext({ viewport: { width: 1920, height: 1080 } });
@@ -25,6 +35,10 @@ try {
   });
   const url = new URL(baseUrl);
   url.searchParams.set('performanceTest', '1');
+  if (requestedBackend === 'webgl2') url.searchParams.set('backend', 'webgl2');
+  if (['high', 'balanced', 'compatibility'].includes(requestedQuality)) {
+    url.searchParams.set('quality', requestedQuality);
+  }
   await enterExperience(page, url.href);
   await page.waitForTimeout(10_000);
 
@@ -38,6 +52,12 @@ try {
     if (!hook) throw new Error('Performance hook unavailable');
     return { performance: hook.snapshot(), runtime: hook.runtimeSnapshot() };
   });
+  let screenshot = null;
+  if (screenshotPath) {
+    screenshot = resolve(screenshotPath);
+    await mkdir(dirname(screenshot), { recursive: true });
+    await page.screenshot({ path: screenshot, fullPage: true });
+  }
   const report = {
     measuredAt: new Date().toISOString(),
     url: url.href,
@@ -45,6 +65,15 @@ try {
     stableBeforeCastMs: 10_000,
     castCount: 3,
     headed,
+    browser: {
+      name: requestedChannel === 'chrome' ? 'Google Chrome' : 'Chromium',
+      version: browser.version(),
+      channel: requestedChannel || 'bundled',
+    },
+    host: { platform: platform(), release: release(), arch: arch(), memoryBytes: totalmem() },
+    requestedBackend,
+    requestedQuality,
+    screenshot,
     consoleErrors,
     ...result,
   };

@@ -1,0 +1,110 @@
+name: Release browser matrix
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  windows-stable:
+    name: Windows ${{ matrix.label }}
+    runs-on: windows-latest
+    timeout-minutes: 25
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - label: Chrome
+            project: chrome-stable
+          - label: Edge
+            project: edge-stable
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Run complete flow in installed stable browser
+        run: npx playwright test tests/e2e/full-flow.spec.ts --project=${{ matrix.project }}
+        env:
+          INCLUDE_STABLE_CHANNELS: '1'
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: windows-${{ matrix.project }}
+          path: test-results
+          if-no-files-found: warn
+
+  macos-safari:
+    name: macOS Safari
+    runs-on: macos-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Enable SafariDriver on the disposable runner
+        run: sudo safaridriver --enable
+      - name: Start SafariDriver
+        run: |
+          safaridriver -p 4444 > /tmp/mimimia-safaridriver.log 2>&1 &
+          sleep 2
+      - name: Run complete flow in installed Safari
+        run: >-
+          node scripts/testing/run-webdriver-full-flow.mjs
+          --browser safari
+          --quality auto
+          --output test-results/browser/safari-full-flow.json
+          --screenshot test-results/browser/safari-complete.png
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: macos-safari
+          path: |
+            test-results
+            /tmp/mimimia-safaridriver.log
+          if-no-files-found: warn
+
+  ordinary-device-profile:
+    name: Ordinary-device performance profile
+    runs-on: macos-13
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Record graphics hardware
+        run: |
+          mkdir -p test-results/performance
+          system_profiler SPDisplaysDataType > test-results/performance/display-hardware.txt
+          sysctl -n machdep.cpu.brand_string > test-results/performance/cpu.txt
+          sysctl -n hw.memsize > test-results/performance/memory-bytes.txt
+      - name: Profile automatic backend and quality
+        run: >-
+          npm run perf:profile --
+          --channel chrome
+          --headed 1
+          --output test-results/performance/ordinary-device-webgpu.json
+          --screenshot test-results/performance/ordinary-device-complete.png
+      - name: Profile forced WebGL 2 compatibility
+        run: >-
+          npm run perf:profile --
+          --channel chrome
+          --headed 1
+          --backend webgl2
+          --quality compatibility
+          --output test-results/performance/ordinary-device-webgl2.json
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: ordinary-device-performance
+          path: test-results/performance
+          if-no-files-found: warn

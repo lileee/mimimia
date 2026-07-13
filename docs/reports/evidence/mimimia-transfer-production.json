@@ -1,0 +1,451 @@
+{
+  "measuredAt": "2026-07-13T22:31:36.599Z",
+  "url": "http://127.0.0.1:4175",
+  "browser": {
+    "name": "Google Chrome",
+    "version": "150.0.7871.115",
+    "channel": "chrome"
+  },
+  "cacheDisabled": true,
+  "readyState": "entry",
+  "limitBytes": 15728640,
+  "totalEncodedBytes": 11707228,
+  "passes": true,
+  "categories": {
+    "program": 262963,
+    "styles": 4084,
+    "magicalGirl": 8476368,
+    "moonCat": 2444810,
+    "audio": 518122,
+    "other": 881
+  },
+  "requests": [
+    {
+      "url": "http://127.0.0.1:4175/assets/characters/magical-girl/body-legs.webp",
+      "status": 200,
+      "mimeType": "image/webp",
+      "type": "Image",
+      "encodedBytes": 1411184
+    },
+    {
+      "url": "http://127.0.0.1:4175/assets/characters/magical-girl/body-legs.webp",
+      "status": 200,
+      "mimeType": "image/webp",
+      "type": "Fetch",
+      "encodedBytes": 1411132
+    },
+    {
+      "url": "http://127.0.0.1:4175/assets/characters/magical-girl/skirt.webp",
+      "status": 200,
+      "mimeType": "image/webp",
+      "type": "Image",
+      "encodedBytes": 714070
+    },
+    {
+      "url": "http://127.0.0.1:4175/assets/characters/magical-girl/skirt.webp",
+      "status": 200,
+      "mimeType": "image/webp",
+      "type": "Fetch",
+      "encodedBytes": 714018
+    },
+    {
+      "url": "http://127.0.0.1:4175/assets/characters/magical-girl/staff.webp",
+      "status": 200,
+      "mimeType": "image/webp",
+      "type": "Image",
+      "encodedBytes": 463428
+    },
+    {
+      "url": "http://127.0.0.1:4175/assets/characters/magical-girl/staff.webp",
+      "status": 200,
+      "mimeType": "image/webp",
+      "type": "Fetch",
+      "encodedBytes": 463376
+    },
+    {
+      "url": "http://127.0.0.1:4175/assets/characters/moon-cat/body.webp",
+      "status": 200,
+      "mimeType": "image/webp",
+      "type": "Image",
+      "encodedBytes": 457034
+    },
+    {
+      "url": "http://127.0.0.1:4175/assets/characters/moon-cat/body.webp",
+      "status": 200,
+      "mimeType": "image/webp",
+      "type": "Fetch",
+      "encodedBytes": 456982
+    },
+    {
+      "url": "http://127.0.0.1:4175/assets/characters/magical-girl/back-hair.webp",
+      "status": 200,
+      "mimeType": "image/webp",
+      "type": "Image",
+      "encodedBytes": 355292
+    },
+    {
+      "url": "http://127.0.0.1:4175/assets/characters/magical-girl/back-hair.webp",
+      "status": 200,
+      "mimeType": "image/webp",
+      "type": "Fetch",
+      "encodedBytes": 355240
+    },
+    {
+      "url": "http://127.0.0.1:4175/assets/characters/moon-cat/head.webp",
+      "status": 200,
+      "mimeType": "image/webp",
+      "type": "Image",
+      "encodedBytes": 266548
+    },
+    {
+      "url": "http://127.0.0.1:4175/assets/characters/moon-cat/head.webp",
+      "status": 200,
+      "mimeType": "image/webp",
+      "type": "Fetch",
+      "encodedBytes": 266496
+    },
+    {
+      "url": "http://127.0.0.1:4175/assets/index-DPwv8Ysz.js",
+      "status": 200,
+      "mimeType": "text/javascript",
+      "type": "Script",
+      "encodedBytes": 262963
+    },
+    {
+      "url": "http://127.0.0.1:4175/assets/audio/ambient-moon-void.mp3",
+      "status": 200,
+      "mimeType": "audio/mpeg",
+      "type": "Fetch",
+      "encodedBytes": 257211
+    },
+    {
+      "url": "http://127.0.0.1:4175/assets/characters/magical-girl/ribbon-right.webp",
+      "status": 200,
+      "mimeType": "image/webp",
+      "type": "Image",
+      "encodedBytes": 219072
+    },
+    {
+      "url": "http://127.0.0.1:4175/assets/characters/magical-girl/ribbon-right.webp",
+      "status": 200,
+      "mimeType": "image/webp",
+      "type": "Fetch",
+      "encodedBytes": 219020
+    },
+    {
+      "url": "http://127.0.0.1:4175/assets/characters/moon-cat/tail.webp",
+      "status": 200,
+      "mimeType": "image/webp",
+      "type": "Image",
+      "encodedBytes": 191832
+    },
+    {
+      "url": "http://127.0.0.1:4175/assets/characters/moon-cat/tail.webp",
+      "status": 200,
+      "mimeType": "image/webp",
+      "type": "Fetch",
+      "encodedBytes": 191780
+    },
+    {
+      "url": "http://127.0.0.1:4175/assets/characters/magical-girl/face.webp",
+      "status": 200,
+      "mimeType": "image/webp",
+      "type": "Image",
+      "encodedBytes": 185982
+    },
+    {
+      "url": "http://127.0.0.1:4175/assets/characters/magical-girl/face.webp",
+      "status": 200,
+      "mimeType": "image/webp",
+      "type": "Fetch",
+      "encodedBytes": 185930
+    },
+    {
+      "url": "http://127.0.0.1:4175/assets/characters/magical-girl/ribbon-left.webp",
+      "status": 200,
+      "mimeType": "image/webp",
+      "type": "Image",
+      "encodedBytes": 176912
+    },
+    {
+      "url": "http://127.0.0.1:4175/assets/characters/magical-girl/ribbon-left.webp",
+      "status": 200,
+      "mimeType": "image/webp",
+      "type": "Fetch",
+      "encodedBytes": 176860
+    },
+    {
+      "url": "http://127.0.0.1:4175/assets/characters/magical-girl/front-hair.webp",
+      "status": 200,
+      "mimeType": "image/webp",
+      "type": "Image",
+      "encodedBytes": 160696
+    },
+    {
+      "url": "http://127.0.0.1:4175/assets/characters/magical-girl/front-hair.webp",
+      "status": 200,
+      "mimeType": "image/webp",
+      "type": "Fetch",
+      "encodedBytes": 160644
+    },
+    {
+      "url": "http://127.0.0.1:4175/assets/characters/magical-girl/hat-ornament.webp",
+      "status": 200,
+      "mimeType": "image/webp",
+      "type": "Image",
+      "encodedBytes": 137520
+    },
+    {
+      "url": "http://127.0.0.1:4175/assets/characters/magical-girl/hat-ornament.webp",
+      "status": 200,
+      "mimeType": "image/webp",
+      "type": "Fetch",
+      "encodedBytes": 137468
+    },
+    {
+      "url": "http://127.0.0.1:4175/assets/characters/magical-girl/cape-outer.webp",
+      "status": 200,
+      "mimeType": "image/webp",
+      "type": "Image",
+      "encodedBytes": 118156
+    },
+    {
+      "url": "http://127.0.0.1:4175/assets/characters/magical-girl/cape-outer.webp",
+      "status": 200,
+      "mimeType": "image/webp",
+      "type": "Fetch",
+      "encodedBytes": 118104
+    },
+    {
+      "url": "http://127.0.0.1:4175/assets/characters/magical-girl/hat-body.webp",
+      "status": 200,
+      "mimeType": "image/webp",
+      "type": "Image",
+      "encodedBytes": 110544
+    },
+    {
+      "url": "http://127.0.0.1:4175/assets/characters/magical-girl/hat-body.webp",
+      "status": 200,
+      "mimeType": "image/webp",
+      "type": "Fetch",
+      "encodedBytes": 110492
+    },
+    {
+      "url": "http://127.0.0.1:4175/assets/characters/magical-girl/staff-glow.webp",
+      "status": 200,
+      "mimeType": "image/webp",
+      "type": "Image",
+      "encodedBytes": 100904
+    },
+    {
+      "url": "http://127.0.0.1:4175/assets/characters/magical-girl/staff-glow.webp",
+      "status": 200,
+      "mimeType": "image/webp",
+      "type": "Fetch",
+      "encodedBytes": 100852
+    },
+    {
+      "url": "http://127.0.0.1:4175/assets/characters/moon-cat/ear-left.webp",
+      "status": 200,
+      "mimeType": "image/webp",
+      "type": "Image",
+      "encodedBytes": 94736
+    },
+    {
+      "url": "http://127.0.0.1:4175/assets/characters/moon-cat/ear-left.webp",
+      "status": 200,
+      "mimeType": "image/webp",
+      "type": "Fetch",
+      "encodedBytes": 94684
+    },
+    {
+      "url": "http://127.0.0.1:4175/assets/characters/moon-cat/ear-right.webp",
+      "status": 200,
+      "mimeType": "image/webp",
+      "type": "Image",
+      "encodedBytes": 86416
+    },
+    {
+      "url": "http://127.0.0.1:4175/assets/characters/moon-cat/ear-right.webp",
+      "status": 200,
+      "mimeType": "image/webp",
+      "type": "Fetch",
+      "encodedBytes": 86364
+    },
+    {
+      "url": "http://127.0.0.1:4175/assets/characters/moon-cat/eyes-open.webp",
+      "status": 200,
+      "mimeType": "image/webp",
+      "type": "Image",
+      "encodedBytes": 83804
+    },
+    {
+      "url": "http://127.0.0.1:4175/assets/characters/moon-cat/eyes-open.webp",
+      "status": 200,
+      "mimeType": "image/webp",
+      "type": "Fetch",
+      "encodedBytes": 83752
+    },
+    {
+      "url": "http://127.0.0.1:4175/assets/audio/charge-low.mp3",
+      "status": 200,
+      "mimeType": "audio/mpeg",
+      "type": "Fetch",
+      "encodedBytes": 51673
+    },
+    {
+      "url": "http://127.0.0.1:4175/assets/audio/charge-crystals.mp3",
+      "status": 200,
+      "mimeType": "audio/mpeg",
+      "type": "Fetch",
+      "encodedBytes": 51673
+    },
+    {
+      "url": "http://127.0.0.1:4175/assets/audio/charge-rise.mp3",
+      "status": 200,
+      "mimeType": "audio/mpeg",
+      "type": "Fetch",
+      "encodedBytes": 51673
+    },
+    {
+      "url": "http://127.0.0.1:4175/assets/characters/magical-girl/eyes-open.webp",
+      "status": 200,
+      "mimeType": "image/webp",
+      "type": "Image",
+      "encodedBytes": 47820
+    },
+    {
+      "url": "http://127.0.0.1:4175/assets/characters/magical-girl/eyes-open.webp",
+      "status": 200,
+      "mimeType": "image/webp",
+      "type": "Fetch",
+      "encodedBytes": 47768
+    },
+    {
+      "url": "http://127.0.0.1:4175/assets/audio/cat-form.mp3",
+      "status": 200,
+      "mimeType": "audio/mpeg",
+      "type": "Fetch",
+      "encodedBytes": 35353
+    },
+    {
+      "url": "http://127.0.0.1:4175/assets/characters/moon-cat/glow.webp",
+      "status": 200,
+      "mimeType": "image/webp",
+      "type": "Image",
+      "encodedBytes": 30648
+    },
+    {
+      "url": "http://127.0.0.1:4175/assets/characters/moon-cat/glow.webp",
+      "status": 200,
+      "mimeType": "image/webp",
+      "type": "Fetch",
+      "encodedBytes": 30596
+    },
+    {
+      "url": "http://127.0.0.1:4175/assets/audio/release-chime.mp3",
+      "status": 200,
+      "mimeType": "audio/mpeg",
+      "type": "Fetch",
+      "encodedBytes": 29593
+    },
+    {
+      "url": "http://127.0.0.1:4175/assets/characters/magical-girl/cape-lining.webp",
+      "status": 200,
+      "mimeType": "image/webp",
+      "type": "Image",
+      "encodedBytes": 29500
+    },
+    {
+      "url": "http://127.0.0.1:4175/assets/characters/magical-girl/cape-lining.webp",
+      "status": 200,
+      "mimeType": "image/webp",
+      "type": "Fetch",
+      "encodedBytes": 29448
+    },
+    {
+      "url": "http://127.0.0.1:4175/assets/audio/dissolve.mp3",
+      "status": 200,
+      "mimeType": "audio/mpeg",
+      "type": "Fetch",
+      "encodedBytes": 21433
+    },
+    {
+      "url": "http://127.0.0.1:4175/assets/audio/charged-cue.mp3",
+      "status": 200,
+      "mimeType": "audio/mpeg",
+      "type": "Fetch",
+      "encodedBytes": 19513
+    },
+    {
+      "url": "http://127.0.0.1:4175/assets/characters/moon-cat/eyes-closed.webp",
+      "status": 200,
+      "mimeType": "image/webp",
+      "type": "Image",
+      "encodedBytes": 10692
+    },
+    {
+      "url": "http://127.0.0.1:4175/assets/characters/moon-cat/eyes-closed.webp",
+      "status": 200,
+      "mimeType": "image/webp",
+      "type": "Fetch",
+      "encodedBytes": 10640
+    },
+    {
+      "url": "http://127.0.0.1:4175/assets/characters/magical-girl/eyes-closed.webp",
+      "status": 200,
+      "mimeType": "image/webp",
+      "type": "Image",
+      "encodedBytes": 6446
+    },
+    {
+      "url": "http://127.0.0.1:4175/assets/characters/magical-girl/eyes-closed.webp",
+      "status": 200,
+      "mimeType": "image/webp",
+      "type": "Fetch",
+      "encodedBytes": 6394
+    },
+    {
+      "url": "http://127.0.0.1:4175/assets/index-DagRYlX3.css",
+      "status": 200,
+      "mimeType": "text/css",
+      "type": "Stylesheet",
+      "encodedBytes": 4084
+    },
+    {
+      "url": "http://127.0.0.1:4175/assets/characters/magical-girl/rig.json",
+      "status": 200,
+      "mimeType": "application/json",
+      "type": "Fetch",
+      "encodedBytes": 1048
+    },
+    {
+      "url": "http://127.0.0.1:4175/assets/characters/magical-girl/rig.json",
+      "status": 200,
+      "mimeType": "application/json",
+      "type": "Fetch",
+      "encodedBytes": 1048
+    },
+    {
+      "url": "http://127.0.0.1:4175/assets/characters/moon-cat/rig.json",
+      "status": 200,
+      "mimeType": "application/json",
+      "type": "Fetch",
+      "encodedBytes": 903
+    },
+    {
+      "url": "http://127.0.0.1:4175/assets/characters/moon-cat/rig.json",
+      "status": 200,
+      "mimeType": "application/json",
+      "type": "Fetch",
+      "encodedBytes": 903
+    },
+    {
+      "url": "http://127.0.0.1:4175/",
+      "status": 200,
+      "mimeType": "text/html",
+      "type": "Document",
+      "encodedBytes": 881
+    }
+  ]
+}

@@ -1,5 +1,20 @@
 import { defineConfig, devices } from '@playwright/test';
 
+const stableChannelProjects = process.env.INCLUDE_STABLE_CHANNELS === '1'
+  ? [
+      {
+        name: 'chrome-stable',
+        use: { channel: 'chrome' as const, viewport: { width: 1280, height: 720 } },
+        testMatch: ['e2e/full-flow.spec.ts'],
+      },
+      {
+        name: 'edge-stable',
+        use: { channel: 'msedge' as const, viewport: { width: 1280, height: 720 } },
+        testMatch: ['e2e/full-flow.spec.ts'],
+      },
+    ]
+  : [];
+
 export default defineConfig({
   testDir: './tests',
   testMatch: ['e2e/**/*.spec.ts', 'visual/**/*.spec.ts'],
@@ -20,6 +35,7 @@ export default defineConfig({
       use: { ...devices['Desktop Chrome'] },
       testIgnore: ['visual/**/*.spec.ts'],
     },
+    ...stableChannelProjects,
     {
       name: 'chromium-webgl2',
       use: { ...devices['Desktop Chrome'] },

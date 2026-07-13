@@ -1,4 +1,5 @@
 import { chromium } from '@playwright/test';
+import { arch, platform, release, totalmem } from 'node:os';
 
 import {
   argument,
@@ -14,9 +15,14 @@ const baseUrl = argument('url', LOCAL_URL);
 const outputPath = argument('output', 'test-results/performance/reset-soak.json');
 const iterations = Number(argument('iterations', '20'));
 const headed = argument('headed', process.env.CI ? '0' : '1') === '1';
+const requestedChannel = argument('channel');
 if (!Number.isInteger(iterations) || iterations < 1) throw new Error('iterations must be a positive integer');
 const stopServer = await ensureServer(baseUrl);
-const browser = await chromium.launch({ headless: !headed, args: ['--js-flags=--expose-gc'] });
+const browser = await chromium.launch({
+  headless: !headed,
+  channel: requestedChannel || undefined,
+  args: ['--js-flags=--expose-gc'],
+});
 
 try {
   const context = await browser.newContext({ viewport: { width: 1920, height: 1080 } });
@@ -62,6 +68,12 @@ try {
     viewport: { width: 1920, height: 1080 },
     iterations,
     headed,
+    browser: {
+      name: requestedChannel === 'chrome' ? 'Google Chrome' : 'Chromium',
+      version: browser.version(),
+      channel: requestedChannel || 'bundled',
+    },
+    host: { platform: platform(), release: release(), arch: arch(), memoryBytes: totalmem() },
     settlingMs: 30_000,
     objectsStable,
     heapStable,

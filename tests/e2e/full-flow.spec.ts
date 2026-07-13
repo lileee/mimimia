@@ -9,9 +9,10 @@ const canvasJson = async <T>(page: import('@playwright/test').Page, attribute: s
   return JSON.parse(value) as T;
 };
 
-test('keeps the entire mouse, failure, summon, cat, sound, and reset flow coherent', async ({ page }, testInfo) => {
+test('keeps the entire mouse, failure, summon, cat, sound, and reset flow coherent', async ({ browser, page }, testInfo) => {
   test.setTimeout(120_000);
-  const params = new URLSearchParams({ quality: 'compatibility' });
+  const automaticQuality = testInfo.project.name === 'chrome-stable' || testInfo.project.name === 'edge-stable';
+  const params = new URLSearchParams(automaticQuality ? {} : { quality: 'compatibility' });
   if (testInfo.project.name === 'chromium-webgl2') params.set('backend', 'webgl2');
   await page.goto(`/?${params}`);
   await expect(page.getByTestId('enter-button')).toBeEnabled({ timeout: 60_000 });
@@ -64,6 +65,30 @@ test('keeps the entire mouse, failure, summon, cat, sound, and reset flow cohere
   const rightGaze = await canvasJson<{ headDegrees: number; eyeOffsetFraction: number }>(page, 'data-cat');
   expect(rightGaze.headDegrees).toBeGreaterThan(leftGaze.headDegrees);
   expect(rightGaze.eyeOffsetFraction).toBeGreaterThan(leftGaze.eyeOffsetFraction);
+
+  const matrixRecord = {
+    measuredAt: new Date().toISOString(),
+    project: testInfo.project.name,
+    browserVersion: browser.version(),
+    userAgent: await page.evaluate(() => navigator.userAgent),
+    viewport: page.viewportSize(),
+    backend: await page.locator('body').getAttribute('data-render-backend'),
+    quality: await page.locator('body').getAttribute('data-quality-tier'),
+    checks: {
+      rightClickIgnored: true,
+      soundDidNotInterrupt: true,
+      earlyReleaseDissolved: true,
+      heldChargeStayedSafe: true,
+      completedSummon: true,
+      catStayedVisible: true,
+      catFollowedPointer: true,
+    },
+  };
+  await testInfo.attach('browser-matrix-record', {
+    body: JSON.stringify(matrixRecord, null, 2),
+    contentType: 'application/json',
+  });
+  console.log(`BROWSER_MATRIX_RECORD ${JSON.stringify(matrixRecord)}`);
 
   await page.getByTestId('reset-button').click();
   await state(page, 'idle', 3_000);

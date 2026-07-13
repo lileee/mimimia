@@ -1,0 +1,71 @@
+{
+  "measuredAt": "2026-07-13T22:56:18.121Z",
+  "url": "http://127.0.0.1:4174/?quality=compatibility",
+  "browser": {
+    "name": "firefox",
+    "version": "152.0.5",
+    "platform": "mac"
+  },
+  "host": {
+    "platform": "darwin",
+    "release": "25.4.0",
+    "arch": "arm64",
+    "memoryBytes": 51539607552
+  },
+  "viewport": {
+    "width": 1280,
+    "height": 770
+  },
+  "checks": {
+    "rightClickIgnored": true,
+    "earlyReleaseDissolved": true,
+    "heldChargeStayedSafe": true,
+    "completedSummon": true,
+    "catStayedVisible": true,
+    "catFollowedPointer": true,
+    "soundDidNotInterrupt": true,
+    "resetClearedSpell": true
+  },
+  "runtime": {
+    "backend": "webgpu",
+    "catVisible": "true",
+    "muted": "false",
+    "particleStats": {
+      "activeCount": 0,
+      "allocatedObjects": 6,
+      "capacity": 1200,
+      "mode": "gather",
+      "trailSegments": 0
+    },
+    "quality": "compatibility",
+    "state": "complete",
+    "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10.15; rv:152.0) Gecko/20100101 Firefox/152.0"
+  },
+  "reset": {
+    "catVisible": "false",
+    "magicCircle": {
+      "auxiliaryOpacity": 0,
+      "auxiliaryProgress": 0,
+      "brightness": 0.72,
+      "centerOpacity": 0,
+      "centerProgress": 0,
+      "centerRotation": 0,
+      "middleOpacity": 0,
+      "middleProgress": 0,
+      "middleRotation": 0,
+      "opacity": 0,
+      "outerOpacity": 0,
+      "outerProgress": 0,
+      "outerRotation": 0
+    },
+    "particleStats": {
+      "activeCount": 0,
+      "allocatedObjects": 6,
+      "capacity": 1200,
+      "mode": "gather",
+      "trailSegments": 0
+    },
+    "state": "idle"
+  },
+  "screenshot": "/tmp/mimimia-firefox-152-complete.png"
+}

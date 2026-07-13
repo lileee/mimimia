@@ -5,8 +5,12 @@ import { argument, ensureServer, LOCAL_URL, writeJson } from './browser-runtime.
 const LIMIT_BYTES = 15 * 1024 * 1024;
 const baseUrl = argument('url', LOCAL_URL);
 const outputPath = argument('output', 'test-results/performance/transfer-size.json');
+const requestedChannel = argument('channel');
 const stopServer = await ensureServer(baseUrl);
-const browser = await chromium.launch({ headless: true });
+const browser = await chromium.launch({
+  headless: true,
+  channel: requestedChannel || undefined,
+});
 
 function category(url) {
   const pathname = new URL(url).pathname;
@@ -57,6 +61,11 @@ try {
   const report = {
     measuredAt: new Date().toISOString(),
     url: baseUrl,
+    browser: {
+      name: requestedChannel === 'chrome' ? 'Google Chrome' : 'Chromium',
+      version: browser.version(),
+      channel: requestedChannel || 'bundled',
+    },
     cacheDisabled: true,
     readyState: await page.locator('body').getAttribute('data-experience-state'),
     limitBytes: LIMIT_BYTES,
