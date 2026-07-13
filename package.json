@@ -9,7 +9,9 @@
     "test:unit": "vitest",
     "test:e2e": "playwright test",
     "test:visual": "playwright test tests/visual",
-    "test:all": "npm run test:unit -- --run && npm run test:e2e"
+    "test:all": "npm run test:unit -- --run && npm run test:e2e",
+    "assets:private-check": "node scripts/assets/verify-private-boundary.mjs",
+    "assets:ledger-check": "node scripts/assets/verify-ledger.mjs"
   },
   "dependencies": {
     "three": "0.185.1"
