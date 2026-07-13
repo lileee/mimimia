@@ -11,7 +11,9 @@
     "test:visual": "playwright test tests/visual",
     "test:all": "npm run test:unit -- --run && npm run test:e2e",
     "assets:private-check": "node scripts/assets/verify-private-boundary.mjs",
-    "assets:ledger-check": "node scripts/assets/verify-ledger.mjs"
+    "assets:ledger-check": "node scripts/assets/verify-ledger.mjs",
+    "art:validate-layers": "node scripts/art/validate-layer-pack.mjs",
+    "art:render-extremes": "node scripts/art/render-layer-extremes.mjs"
   },
   "dependencies": {
     "three": "0.185.1"

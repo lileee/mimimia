@@ -1,0 +1,139 @@
+{
+  "id": "magical-girl",
+  "version": 1,
+  "canvas": {
+    "width": 2100,
+    "height": 4096
+  },
+  "origin": {
+    "x": 0.5,
+    "y": 0.94
+  },
+  "worldHeight": 4.8,
+  "sourceMaster": "approved-master.png",
+  "sourceMasterSha256": "de9a5af6215c2c5d2ba22df86cf583fda8bfd907939cbc84a1087d1cd931a205",
+  "layers": [
+    {
+      "name": "body-legs",
+      "path": "layers/body-legs.png",
+      "pivot": { "x": 0.52, "y": 0.58 },
+      "zOrder": 200,
+      "blendMode": "normal",
+      "motionRange": { "rotationDegrees": 0, "translateYPercent": 0.8 }
+    },
+    {
+      "name": "back-hair",
+      "path": "layers/back-hair.png",
+      "pivot": { "x": 0.52, "y": 0.29 },
+      "zOrder": 210,
+      "blendMode": "normal",
+      "motionRange": { "rotationDegrees": 2.4, "translateYPercent": 0 }
+    },
+    {
+      "name": "cape-lining",
+      "path": "layers/cape-lining.png",
+      "pivot": { "x": 0.51, "y": 0.43 },
+      "zOrder": 320,
+      "blendMode": "normal",
+      "motionRange": { "rotationDegrees": 1.4, "translateYPercent": 0 }
+    },
+    {
+      "name": "cape-outer",
+      "path": "layers/cape-outer.png",
+      "pivot": { "x": 0.52, "y": 0.39 },
+      "zOrder": 330,
+      "blendMode": "normal",
+      "motionRange": { "rotationDegrees": 2.2, "translateYPercent": 0 }
+    },
+    {
+      "name": "ribbon-left",
+      "path": "layers/ribbon-left.png",
+      "pivot": { "x": 0.34, "y": 0.49 },
+      "zOrder": 340,
+      "blendMode": "normal",
+      "motionRange": { "rotationDegrees": 4, "translateYPercent": 0 }
+    },
+    {
+      "name": "ribbon-right",
+      "path": "layers/ribbon-right.png",
+      "pivot": { "x": 0.68, "y": 0.48 },
+      "zOrder": 341,
+      "blendMode": "normal",
+      "motionRange": { "rotationDegrees": 4, "translateYPercent": 0 }
+    },
+    {
+      "name": "skirt",
+      "path": "layers/skirt.png",
+      "pivot": { "x": 0.51, "y": 0.53 },
+      "zOrder": 350,
+      "blendMode": "normal",
+      "motionRange": { "rotationDegrees": 1.8, "translateYPercent": 0 }
+    },
+    {
+      "name": "face",
+      "path": "layers/face.png",
+      "pivot": { "x": 0.52, "y": 0.29 },
+      "zOrder": 450,
+      "blendMode": "normal",
+      "motionRange": { "rotationDegrees": 0, "translateYPercent": 0.8 }
+    },
+    {
+      "name": "eyes-open",
+      "path": "layers/eyes-open.png",
+      "pivot": { "x": 0.52, "y": 0.27 },
+      "zOrder": 451,
+      "blendMode": "normal",
+      "motionRange": { "rotationDegrees": 0, "translateYPercent": 0.8 },
+      "defaultVisible": true
+    },
+    {
+      "name": "eyes-closed",
+      "path": "layers/eyes-closed.png",
+      "pivot": { "x": 0.52, "y": 0.27 },
+      "zOrder": 452,
+      "blendMode": "normal",
+      "motionRange": { "rotationDegrees": 0, "translateYPercent": 0.8 },
+      "defaultVisible": false
+    },
+    {
+      "name": "front-hair",
+      "path": "layers/front-hair.png",
+      "pivot": { "x": 0.52, "y": 0.24 },
+      "zOrder": 460,
+      "blendMode": "normal",
+      "motionRange": { "rotationDegrees": 1.8, "translateYPercent": 0 }
+    },
+    {
+      "name": "hat-body",
+      "path": "layers/hat-body.png",
+      "pivot": { "x": 0.53, "y": 0.27 },
+      "zOrder": 470,
+      "blendMode": "normal",
+      "motionRange": { "rotationDegrees": 0.6, "translateYPercent": 0 }
+    },
+    {
+      "name": "hat-ornament",
+      "path": "layers/hat-ornament.png",
+      "pivot": { "x": 0.61, "y": 0.18 },
+      "zOrder": 471,
+      "blendMode": "normal",
+      "motionRange": { "rotationDegrees": 2, "translateYPercent": 0 }
+    },
+    {
+      "name": "staff",
+      "path": "layers/staff.png",
+      "pivot": { "x": 0.29, "y": 0.43 },
+      "zOrder": 480,
+      "blendMode": "normal",
+      "motionRange": { "rotationDegrees": 0.8, "translateYPercent": 0 }
+    },
+    {
+      "name": "staff-glow",
+      "path": "layers/staff-glow.png",
+      "pivot": { "x": 0.29, "y": 0.43 },
+      "zOrder": 481,
+      "blendMode": "additive",
+      "motionRange": { "rotationDegrees": 0.8, "translateYPercent": 0 }
+    }
+  ]
+}
