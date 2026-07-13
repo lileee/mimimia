@@ -13,7 +13,10 @@
     "assets:private-check": "node scripts/assets/verify-private-boundary.mjs",
     "assets:ledger-check": "node scripts/assets/verify-ledger.mjs",
     "art:validate-layers": "node scripts/art/validate-layer-pack.mjs",
-    "art:render-extremes": "node scripts/art/render-layer-extremes.mjs"
+    "art:render-extremes": "node scripts/art/render-layer-extremes.mjs",
+    "audio:generate": "node scripts/audio/generate-original-audio.mjs",
+    "audio:validate": "node scripts/audio/validate-audio.mjs",
+    "audio:review": "node scripts/audio/render-audio-review.mjs"
   },
   "dependencies": {
     "three": "0.185.1"
