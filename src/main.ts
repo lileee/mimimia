@@ -3,6 +3,7 @@ import './styles.css';
 import { isQualityTier } from './quality/qualityProfiles';
 import { createRenderer } from './rendering/createRenderer';
 import { Stage } from './stage/Stage';
+import type { ExperienceState } from './state/experienceTypes';
 
 const app = document.createElement('main');
 app.id = 'app';
@@ -33,6 +34,20 @@ const quality = isQualityTier(qualityValue) ? qualityValue : 'high';
 const forceWebGL = query.get('backend') === 'webgl2';
 const characterPose = query.get('characterPose');
 const debugCharacterPose = characterPose === 'min' || characterPose === 'max' ? characterPose : 'idle';
+const experienceStateValue = query.get('experienceState');
+const debugExperienceState: ExperienceState = experienceStateValue === 'charging'
+  || experienceStateValue === 'charged'
+  || experienceStateValue === 'dissolving'
+  || experienceStateValue === 'summoning'
+  ? experienceStateValue
+  : 'idle';
+const numberQuery = (name: string, fallback: number) => {
+  const value = Number(query.get(name));
+  return Number.isFinite(value) ? Math.min(1, Math.max(0, value)) : fallback;
+};
+const debugCharge = numberQuery('charge', debugExperienceState === 'charged' ? 1 : 0);
+const debugDissolve = numberQuery('dissolve', 0);
+const debugSummon = numberQuery('summon', 0);
 let disposeRenderer: (() => void) | undefined;
 
 async function initializeRenderer() {
@@ -53,22 +68,25 @@ async function initializeRenderer() {
     let previousTime = performance.now();
     let animationFrame = 0;
     let active = true;
+    const makeSignals = (nowMs: number, deltaSeconds: number) => ({
+      nowMs,
+      deltaSeconds,
+      state: debugExperienceState,
+      charge: debugCharge,
+      dissolve: debugDissolve,
+      summon: debugSummon,
+      pointerNdc: { x: 0, y: 0 },
+    });
     const renderFrame = async (nowMs: number) => {
       const deltaSeconds = Math.min(0.1, Math.max(0, (nowMs - previousTime) / 1000));
       previousTime = nowMs;
-      stage.update({
-        nowMs,
-        deltaSeconds,
-        state: 'idle',
-        charge: 0,
-        dissolve: 0,
-        summon: 0,
-        pointerNdc: { x: 0, y: 0 },
-      }, quality);
+      stage.update(makeSignals(nowMs, deltaSeconds), quality);
+      canvas.dataset.magicCircle = JSON.stringify(stage.magicCircle.getSnapshot());
       await handle.renderer.renderAsync(stage.scene, stage.cameraRig.camera);
       if (active) animationFrame = requestAnimationFrame(renderFrame);
     };
-    stage.update({ nowMs: previousTime, deltaSeconds: 0, state: 'idle', charge: 0, dissolve: 0, summon: 0, pointerNdc: { x: 0, y: 0 } }, quality);
+    stage.update(makeSignals(previousTime, 0), quality);
+    canvas.dataset.magicCircle = JSON.stringify(stage.magicCircle.getSnapshot());
     await handle.renderer.renderAsync(stage.scene, stage.cameraRig.camera);
     canvas.dataset.renderReady = 'true';
     document.body.dataset.renderBackend = handle.backend;
@@ -78,6 +96,7 @@ async function initializeRenderer() {
     document.body.dataset.catLayerCount = String(stage.moonCat?.layered.layerNames.length ?? 0);
     document.body.dataset.catVisible = String(stage.moonCat?.root.visible ?? false);
     document.body.dataset.characterPose = debugCharacterPose;
+    document.body.dataset.magicCircleReady = 'true';
     status.textContent = '月光虚境已就绪';
     animationFrame = requestAnimationFrame(renderFrame);
     window.addEventListener('resize', resize);
