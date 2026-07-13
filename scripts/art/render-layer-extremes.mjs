@@ -11,21 +11,22 @@ const CELL_WIDTH = 320;
 const CELL_HEIGHT = 620;
 const LABEL_HEIGHT = 36;
 const DRAW_HEIGHT = CELL_HEIGHT - LABEL_HEIGHT;
-const DRAW_WIDTH = Math.round(DRAW_HEIGHT * (2100 / 4096));
-const DRAW_LEFT = Math.floor((CELL_WIDTH - DRAW_WIDTH) / 2);
 
 function escapeXml(value) {
   return String(value).replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;');
 }
 
 async function prepareLayer(sourceRoot, layer, canvas) {
-  const drawWidth = Math.round(DRAW_HEIGHT * (canvas.width / canvas.height));
+  const aspect = canvas.width / canvas.height;
+  const drawWidth = Math.min(CELL_WIDTH, Math.round(DRAW_HEIGHT * aspect));
+  const drawHeight = Math.min(DRAW_HEIGHT, Math.round(CELL_WIDTH / aspect));
   const left = Math.floor((CELL_WIDTH - drawWidth) / 2);
+  const top = LABEL_HEIGHT + Math.floor((DRAW_HEIGHT - drawHeight) / 2);
   const resized = await sharp(path.join(sourceRoot, layer.path))
-    .resize(drawWidth, DRAW_HEIGHT, { fit: 'fill' })
+    .resize(drawWidth, drawHeight, { fit: 'fill' })
     .extend({
-      top: LABEL_HEIGHT,
-      bottom: 0,
+      top,
+      bottom: CELL_HEIGHT - drawHeight - top,
       left,
       right: CELL_WIDTH - drawWidth - left,
       background: { r: 0, g: 0, b: 0, alpha: 0 },
@@ -36,7 +37,8 @@ async function prepareLayer(sourceRoot, layer, canvas) {
     ...layer,
     href: `data:image/png;base64,${resized.toString('base64')}`,
     pivotX: left + layer.pivot.x * drawWidth,
-    pivotY: LABEL_HEIGHT + layer.pivot.y * DRAW_HEIGHT,
+    pivotY: top + layer.pivot.y * drawHeight,
+    motionHeight: drawHeight,
   };
 }
 
@@ -53,7 +55,7 @@ function backgroundSvg(label) {
   `;
 }
 
-async function renderFrame(preparedLayers, target, direction, zoom) {
+async function renderFrame(preparedLayers, target, direction, zoom, groupTranslatePercent) {
   const stateLabel = direction < 0 ? 'NEGATIVE' : direction > 0 ? 'POSITIVE' : 'NEUTRAL';
   const targetLayer = preparedLayers.find((layer) => layer.name === target.name);
   const zoomTransform = zoom
@@ -66,12 +68,17 @@ async function renderFrame(preparedLayers, target, direction, zoom) {
     if (layer.name === 'eyes-open' && target.name === 'eyes-closed') continue;
     if (layer.defaultVisible === false && layer.name !== target.name) continue;
 
-    let transform = '';
-    if (layer.name === target.name) {
-      const rotation = layer.motionRange.rotationDegrees * direction;
-      const translateY = (layer.motionRange.translateYPercent / 100) * DRAW_HEIGHT * direction;
-      transform = `translate(0 ${translateY}) translate(${layer.pivotX} ${layer.pivotY}) rotate(${rotation}) translate(${-layer.pivotX} ${-layer.pivotY})`;
-    }
+    const groupTranslateY = Number.isFinite(groupTranslatePercent)
+      ? (groupTranslatePercent / 100) * layer.motionHeight * direction
+      : 0;
+    const followsTarget = layer.name === target.name || layer.parent === target.name;
+    const localTranslateY = !Number.isFinite(groupTranslatePercent) && layer.name === target.name
+      ? (layer.motionRange.translateYPercent / 100) * layer.motionHeight * direction
+      : 0;
+    const rotation = followsTarget ? target.motionRange.rotationDegrees * direction : 0;
+    const transform = rotation !== 0
+      ? `translate(0 ${groupTranslateY + localTranslateY}) translate(${targetLayer.pivotX} ${targetLayer.pivotY}) rotate(${rotation}) translate(${-targetLayer.pivotX} ${-targetLayer.pivotY})`
+      : `translate(0 ${groupTranslateY + localTranslateY})`;
     const blend = layer.blendMode === 'additive' ? ' style="mix-blend-mode:screen"' : '';
     images.push(`<image href="${layer.href}" x="0" y="0" width="${CELL_WIDTH}" height="${CELL_HEIGHT}" transform="${transform}"${blend}/>`);
   }
@@ -83,11 +90,17 @@ async function renderFrame(preparedLayers, target, direction, zoom) {
   return sharp(Buffer.from(svg)).png({ compressionLevel: 9 }).toBuffer();
 }
 
-async function renderBoard(preparedLayers, movingLayers, zoom, outputPath) {
+async function renderBoard(preparedLayers, movingLayers, zoom, outputPath, groupTranslatePercent) {
   const composites = [];
   for (let row = 0; row < movingLayers.length; row += 1) {
     const target = movingLayers[row];
-    const frames = await Promise.all([-1, 0, 1].map((direction) => renderFrame(preparedLayers, target, direction, zoom)));
+    const frames = await Promise.all([-1, 0, 1].map((direction) => renderFrame(
+      preparedLayers,
+      target,
+      direction,
+      zoom,
+      groupTranslatePercent,
+    )));
     for (let column = 0; column < frames.length; column += 1) {
       composites.push({ input: frames[column], left: column * CELL_WIDTH, top: row * CELL_HEIGHT });
     }
@@ -115,8 +128,20 @@ async function main() {
     layer.motionRange.rotationDegrees !== 0 || layer.motionRange.translateYPercent !== 0,
   );
   await mkdir(reviewRoot, { recursive: true });
-  await renderBoard(preparedLayers, movingLayers, false, path.join(reviewRoot, `${character}-layer-extremes-1x.png`));
-  await renderBoard(preparedLayers, movingLayers, true, path.join(reviewRoot, `${character}-layer-extremes-2x.png`));
+  await renderBoard(
+    preparedLayers,
+    movingLayers,
+    false,
+    path.join(reviewRoot, `${character}-layer-extremes-1x.png`),
+    rig.groupMotion?.translateYPercent,
+  );
+  await renderBoard(
+    preparedLayers,
+    movingLayers,
+    true,
+    path.join(reviewRoot, `${character}-layer-extremes-2x.png`),
+    rig.groupMotion?.translateYPercent,
+  );
   console.log(`${character} 极限审核板已生成：${movingLayers.length} 个可动层，负/静止/正三档，1× 与 2×。`);
 }
 
