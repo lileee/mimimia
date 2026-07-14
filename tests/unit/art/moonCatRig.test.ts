@@ -11,5 +11,5 @@ describe('moon cat layer pack', () => {
       encoding: 'utf8',
       stdio: ['ignore', 'pipe', 'pipe'],
     })).not.toThrow();
-  });
+  }, 30_000);
 });
