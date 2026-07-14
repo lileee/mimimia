@@ -4,5 +4,6 @@ dist/
 playwright-report/
 test-results/
 coverage/
+/release/
 *.log
 .DS_Store

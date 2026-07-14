@@ -18,6 +18,7 @@ import {
   type PostProcessingFrame,
   type PostProcessingTierConfig,
 } from './postprocessingNodes';
+import { PostProcessingHistoryReset } from './PostProcessingHistoryReset';
 
 export interface PostProcessingSnapshot extends PostProcessingFrame, PostProcessingTierConfig {
   quality: QualityTier;
@@ -41,6 +42,7 @@ export class PostProcessing {
   readonly #distortionControls;
   readonly #chromaticStrength = uniform(0);
   readonly #afterImageDamp = uniform(0.18);
+  readonly #historyReset = new PostProcessingHistoryReset();
   readonly #outputs;
   #profile: QualityProfile = QUALITY_PROFILES.high;
   #quality: QualityTier = 'high';
@@ -98,19 +100,18 @@ export class PostProcessing {
   }
 
   render(): void {
+    if (this.#historyReset.consume()) {
+      const damp = this.#afterImageDamp.value;
+      this.#afterImageDamp.value = 0;
+      this.#pipeline.render();
+      this.#afterImageDamp.value = damp;
+      return;
+    }
     this.#pipeline.render();
   }
 
   clearHistory(): void {
-    const selectedOutput = this.#outputs[this.#quality];
-    const damp = this.#afterImageDamp.value;
-    this.#afterImageDamp.value = 0;
-    this.#pipeline.outputNode = this.#outputs.high;
-    this.#pipeline.needsUpdate = true;
-    this.#pipeline.render();
-    this.#afterImageDamp.value = damp;
-    this.#pipeline.outputNode = selectedOutput;
-    this.#pipeline.needsUpdate = true;
+    this.#historyReset.request();
   }
 
   resize(width: number, height: number): void {

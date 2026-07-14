@@ -1,0 +1,36 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          lfs: true
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - name: Verify private boundary before install
+        run: npm run assets:private-check
+      - run: npm ci
+      - name: Install acceptance browsers
+        run: npx playwright install --with-deps chromium firefox webkit
+      - run: npm run test:acceptance
+      - run: npm run build
+      - run: npm run assets:private-check
+      - run: npm run assets:ledger-check
+      - run: npm run assets:size-check
+      - uses: actions/upload-artifact@v4
+        with:
+          name: dist
+          path: dist
+          if-no-files-found: error

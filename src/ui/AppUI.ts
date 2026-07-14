@@ -37,6 +37,7 @@ export class AppUI {
   readonly #errorMessage = element('h2', 'error-message');
   readonly #errorDetail = element('p', 'error-detail');
   readonly #errorButton = button('ritual-button error-button', 'reload-button', 'reload', '重新加载');
+  readonly #actionButtons = [this.#entryButton, this.#soundButton, this.#resetButton, this.#errorButton];
   #handler: UIActionHandler = () => undefined;
 
   constructor(root: HTMLElement) {
@@ -76,7 +77,7 @@ export class AppUI {
       this.#qualityNotice,
       this.#errorPanel,
     );
-    this.#root.addEventListener('click', this.#onClick);
+    this.#actionButtons.forEach((actionButton) => actionButton.addEventListener('click', this.#onClick));
   }
 
   setActionHandler(handler: UIActionHandler): void {
@@ -132,13 +133,13 @@ export class AppUI {
   }
 
   dispose(): void {
-    this.#root.removeEventListener('click', this.#onClick);
+    this.#actionButtons.forEach((actionButton) => actionButton.removeEventListener('click', this.#onClick));
     this.#root.replaceChildren();
   }
 
   readonly #onClick = (event: MouseEvent): void => {
-    const target = (event.target as Element | null)?.closest<HTMLButtonElement>('button[data-action]');
-    if (!target || target.disabled) return;
+    const target = event.currentTarget;
+    if (!(target instanceof HTMLButtonElement) || target.disabled) return;
     event.stopPropagation();
     this.#handler(target.dataset.action as UIAction);
   };

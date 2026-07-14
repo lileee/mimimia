@@ -1,10 +1,11 @@
 {
   "name": "mimimia",
-  "version": "0.1.0",
+  "version": "1.0.0",
   "private": true,
   "type": "module",
   "scripts": {
     "dev": "vite",
+    "preview": "vite preview",
     "typecheck": "tsc --noEmit",
     "build": "tsc --noEmit && vite build",
     "test:unit": "vitest",
@@ -25,17 +26,19 @@
     "perf:profile": "node scripts/performance/run-summon-profile.mjs",
     "perf:soak": "node scripts/performance/run-reset-soak.mjs",
     "perf:transfer": "node scripts/performance/measure-transfer.mjs",
+    "release:package": "node scripts/release/package-release.mjs",
+    "release:verify": "node scripts/release/verify-release.mjs",
     "rendering:forbidden-check": "node scripts/testing/assert-no-forbidden-rendering.mjs"
   },
   "dependencies": {
     "three": "0.185.1"
   },
   "devDependencies": {
-    "@playwright/test": "1.55.0",
+    "@playwright/test": "1.61.1",
     "@types/three": "0.185.0",
     "sharp": "0.34.3",
     "typescript": "5.9.2",
-    "vite": "7.1.7",
-    "vitest": "3.2.4"
+    "vite": "7.3.6",
+    "vitest": "3.2.7"
   }
 }

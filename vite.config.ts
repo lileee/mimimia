@@ -8,6 +8,9 @@ export default defineConfig(({ mode }) => {
     define: {
       __MIMIMIA_ALLOW_DEBUG_QUERY__: JSON.stringify(allowDebugQuery),
     },
+    build: {
+      sourcemap: false,
+    },
     server: {
       host: '127.0.0.1',
       port: 4174,
